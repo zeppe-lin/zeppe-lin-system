@@ -393,6 +393,7 @@ def canonical_git_source(
     override: Path | None,
 ) -> Path:
     local_override = override is not None
+    cloned = False
     if local_override:
         repository = override.expanduser().resolve()
         if not repository.is_dir():
@@ -406,11 +407,12 @@ def canonical_git_source(
             if result.status != 0:
                 shutil.rmtree(repository, ignore_errors=True)
                 raise BootstrapError('cannot clone admitted foundation source')
+            cloned = True
         if not (repository / '.git').exists():
             raise BootstrapError(f'cached foundation source is not a Git repository: {repository}')
 
     head = run_command([git, '-C', repository, 'rev-parse', 'HEAD'])
-    if head.status != 0 or head.stdout.strip() != descriptor.revision:
+    if head.status != 0 or head.stdout.strip() != descriptor.revision or cloned:
         if local_override:
             raise BootstrapError(
                 f'local foundation source HEAD differs from admitted revision {descriptor.revision}')
@@ -771,7 +773,7 @@ def _reject_start_redeclaration(options: BootstrapOptions) -> None:
         raise BootstrapError('--source-date-epoch is valid only when initializing a new workspace')
 
 
-def initialize(context: BuildContext, options: BootstrapOptions) -> dict[str, object]:
+def _initialize_attempt(context: BuildContext, options: BootstrapOptions) -> dict[str, object]:
     workspace = options.workspace.expanduser().resolve()
     if marker_path(workspace).exists():
         marker = load_marker(workspace)
@@ -926,6 +928,35 @@ def initialize(context: BuildContext, options: BootstrapOptions) -> dict[str, ob
     print(f'build-policy-parallelism={jobs}')
     print(f'build-policy-source-date-epoch={epoch}')
     return marker
+
+
+def initialize(context: BuildContext, options: BootstrapOptions) -> dict[str, object]:
+    workspace = options.workspace.expanduser().resolve()
+    created = not workspace.exists()
+    try:
+        return _initialize_attempt(context, options)
+    except BaseException as error:
+        if created and workspace.exists() and not marker_path(workspace).exists():
+            privilege = None
+            if options.privilege is not None:
+                try:
+                    privilege = resolve_program(options.privilege)
+                except BootstrapError:
+                    privilege = None
+            try:
+                shutil.rmtree(workspace)
+            except OSError as cleanup_error:
+                if privilege is None:
+                    raise BootstrapError(
+                        'bootstrap initialization failed and partial workspace cannot be removed: '
+                        f'{workspace}: {cleanup_error}') from error
+                result = run_command(['rm', '-rf', '--', workspace], privilege=privilege)
+                if result.status != 0:
+                    print_result(result)
+                    raise BootstrapError(
+                        'bootstrap initialization failed and privileged partial-workspace cleanup failed') \
+                        from error
+        raise
 
 
 def _tar_has_member(path: Path, member: str) -> bool:

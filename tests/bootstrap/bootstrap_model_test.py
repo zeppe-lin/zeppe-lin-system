@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import io
+import shutil
 import stat
+import subprocess
 import sys
 import tarfile
 import tempfile
@@ -164,6 +166,68 @@ artifact.0.sha256 abc
             pass
         else:
             fail('archive member descending through symlink was admitted')
+
+        git = shutil.which('git')
+        if git is None:
+            fail('git is unavailable for foundation source model test')
+        origin = temp / 'foundation-origin'
+        subprocess.run([git, 'init', '-q', origin], check=True)
+        subprocess.run(
+            [git, '-C', origin, 'config', 'user.email', 'bootstrap-model@example.invalid'],
+            check=True)
+        subprocess.run(
+            [git, '-C', origin, 'config', 'user.name', 'bootstrap-model'], check=True)
+        (origin / 'recipe.yml').write_text('name: model\n', encoding='utf-8')
+        subprocess.run([git, '-C', origin, 'add', 'recipe.yml'], check=True)
+        subprocess.run([git, '-C', origin, 'commit', '-q', '-m', 'model'], check=True)
+        revision = subprocess.run(
+            [git, '-C', origin, 'rev-parse', 'HEAD'], check=True,
+            text=True, stdout=subprocess.PIPE).stdout.strip()
+        descriptor = bootstrap.CollectionDescriptor(
+            name='foundation', url=str(origin), revision=revision)
+        cached = bootstrap.canonical_git_source(
+            descriptor, git=Path(git), cache_root=temp / 'collection-cache', override=None)
+        if (cached / 'recipe.yml').read_text(encoding='utf-8') != 'name: model\n':
+            fail('fresh exact-HEAD foundation clone was not materialized')
+        cached_status = subprocess.run(
+            [git, '-C', cached, 'status', '--porcelain', '--untracked-files=all'],
+            check=True, text=True, stdout=subprocess.PIPE).stdout
+        if cached_status.strip():
+            fail('fresh exact-HEAD foundation clone is dirty after materialization')
+        (cached / 'recipe.yml').write_text('name: mutated\n', encoding='utf-8')
+        try:
+            bootstrap.canonical_git_source(
+                descriptor, git=Path(git), cache_root=temp / 'collection-cache', override=None)
+        except bootstrap.BootstrapError:
+            pass
+        else:
+            fail('dirty cached foundation source was silently repaired')
+
+        failed_workspace = temp / 'failed-bootstrap'
+        try:
+            bootstrap.initialize(
+                context,
+                bootstrap.BootstrapOptions(
+                    workspace=failed_workspace, seed_name='missing-bootstrap-model-seed'))
+        except bootstrap.BootstrapError:
+            pass
+        else:
+            fail('invalid seed unexpectedly initialized a bootstrap workspace')
+        if failed_workspace.exists():
+            fail('failed new bootstrap initialization retained an unmarked workspace')
+
+        unmarked_workspace = temp / 'unmarked-bootstrap'
+        unmarked_workspace.mkdir()
+        (unmarked_workspace / 'foreign').write_text('keep\n', encoding='utf-8')
+        try:
+            bootstrap.clean(
+                context, bootstrap.BootstrapOptions(workspace=unmarked_workspace))
+        except bootstrap.BootstrapError:
+            pass
+        else:
+            fail('bootstrap clean removed an unmarked workspace')
+        if not (unmarked_workspace / 'foreign').is_file():
+            fail('bootstrap clean mutated an unmarked workspace')
 
 
 if __name__ == '__main__':
