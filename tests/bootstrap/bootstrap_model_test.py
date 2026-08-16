@@ -130,6 +130,27 @@ artifact.0.sha256 abc
         if escaping_root.exists():
             fail('rejected seed archive retained a partial extraction root')
 
+        absolute_link = temp / 'absolute-link.tar'
+        with tarfile.open(absolute_link, 'w') as archive:
+            link = tarfile.TarInfo('./usr/lib/libnsl.so.2')
+            link.type = tarfile.SYMTYPE
+            link.linkname = '/usr/lib/libnsl.so.2.0.1'
+            archive.addfile(link)
+        absolute_root = temp / 'absolute-link-root'
+        old_extraction_filter = getattr(tarfile.TarFile, 'extraction_filter', None)
+        if hasattr(tarfile, 'data_filter'):
+            tarfile.TarFile.extraction_filter = staticmethod(tarfile.data_filter)
+        try:
+            bootstrap._extract_archive_bytes(absolute_link.read_bytes(), absolute_root)
+        finally:
+            if hasattr(tarfile.TarFile, 'extraction_filter'):
+                tarfile.TarFile.extraction_filter = old_extraction_filter
+        extracted_link = absolute_root / 'usr/lib/libnsl.so.2'
+        if not extracted_link.is_symlink():
+            fail('admitted absolute rootfs symlink was not preserved')
+        if str(extracted_link.readlink()) != '/usr/lib/libnsl.so.2.0.1':
+            fail('admitted absolute rootfs symlink target differs')
+
         symlink = temp / 'symlink.tar'
         with tarfile.open(symlink, 'w') as archive:
             link = tarfile.TarInfo('alias')

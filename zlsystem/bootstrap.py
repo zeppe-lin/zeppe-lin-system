@@ -307,6 +307,28 @@ def _archive_members(archive: tarfile.TarFile) -> list[tarfile.TarInfo]:
     return members
 
 
+def _extract_admitted_member(
+    archive: tarfile.TarFile,
+    member: tarfile.TarInfo,
+    destination: Path,
+) -> None:
+    if hasattr(tarfile, 'fully_trusted_filter'):
+        # Archive admission is owned by _extract_archive_bytes(). The tarfile
+        # filter is disabled here so a host Python release cannot reinterpret
+        # already-admitted rootfs link topology as extraction policy.
+        archive.extract(
+            member,
+            path=destination,
+            set_attrs=True,
+            numeric_owner=False,
+            filter=tarfile.fully_trusted_filter,
+        )
+    else:
+        # Extraction filters were added in Python 3.12. Older interpreters
+        # already provide the unrestricted extraction mechanism required here.
+        archive.extract(member, path=destination, set_attrs=True, numeric_owner=False)
+
+
 def _extract_archive_bytes(data: bytes, destination: Path) -> None:
     with tarfile.open(fileobj=io.BytesIO(data), mode='r:*') as archive:
         members = _archive_members(archive)
@@ -340,7 +362,7 @@ def _extract_archive_bytes(data: bytes, destination: Path) -> None:
                 # Device semantics are supplied privately by execution. They are
                 # not needed from the historical construction seed.
                 continue
-            archive.extract(member, path=destination, set_attrs=True, numeric_owner=False)
+            _extract_admitted_member(archive, member, destination)
 
 
 def extract_seed_archive(archive_path: Path, destination: Path) -> None:
