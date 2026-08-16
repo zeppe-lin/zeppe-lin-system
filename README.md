@@ -1,46 +1,30 @@
 # zeppe-lin-system
 
-`zeppe-lin-system` is the host-side system-construction project for the native
-Zeppe-Lin toolchain. It binds a reproducible controller source set and, in later
-milestones, will drive bootstrap and system-product construction without asking
-the operator to assemble dozens of sibling repositories or source private build
-environments by hand.
+`zeppe-lin-system` is the host-side product composer for the native Zeppe-Lin
+package stack. It builds one exact native controller from pinned Meson
+subprojects, then uses that controller to construct system products from
+explicit package-source and seed authority.
 
-The initial `0.1.x` milestone deliberately provides one product only:
-`controller`.
+The project does not resolve dependencies, execute recipes, reconcile package
+state, or apply package images itself. Those semantics remain in `pkgctl` and
+the native libraries.
+
+The current `0.1.x` milestone provides two surfaces:
 
 ```text
-pinned Zeppe-Lin source set
-          |
-          v
-       Meson
-          |
-          v
-pkgctl + pkgstate-init
+controller    exact pkgctl + pkgstate-init build
+bootstrap     historical seed qualification + final runtime cohort construction
 ```
 
-It does not bootstrap packages, compose a root filesystem, or build installation
-media yet. Those products will consume this controller boundary after the
-controller build is boring on both Zeppe-Lin and foreign Linux hosts.
-
-## Controller build
+## Build the controller
 
 The controller source set is recorded by exact Git commits in
 `subprojects/*.wrap`. Zeppe-Lin library dependencies are forced to those wraps;
-an installed `libpkg*` with a compatible-looking version is not controller
-source authority.
+an installed `libpkg*` is not controller source authority.
 
-Host dependencies are intentionally not wrapped. The current controller needs a
-C++ toolchain plus Meson/Ninja and the following development dependencies:
-
-- OpenSSL `libcrypto`
-- `libarchive`
-- `libcurl` >= 7.85.0
-- `libyaml` >= 0.2.5 (`yaml-0.1`)
-- POSIX threads
-- Python 3 for project contracts and the future host frontend
-
-Configure and build:
+The host supplies a C++ toolchain, Meson/Ninja, Python 3, Git, `readelf`, POSIX
+threads, OpenSSL `libcrypto`, libarchive, libcurl >= 7.85.0, and libyaml >=
+0.2.5.
 
 ```sh
 meson setup build
@@ -48,38 +32,95 @@ meson compile -C build controller
 meson test -C build --suite contract --print-errorlogs
 ```
 
-Meson downloads missing Zeppe-Lin subprojects from the pinned wraps. For a
-prefetched/offline source tree, use `--wrap-mode=nodownload`; the explicit
-`force_fallback_for` source-set policy still prevents substitution by installed
-Zeppe-Lin libraries.
+`build/controller-paths.ini` records the exact build-tree `pkgctl` and
+`pkgstate-init` targets. Meson also generates the executable
+`build/zlsystem` frontend from those same target objects.
 
-`build/controller-paths.ini` records the exact build-tree controller executables
-from Meson target objects:
+For a prefetched controller source set, `--wrap-mode=nodownload` disables wrap
+network acquisition while the committed `force_fallback_for` policy continues
+to forbid installed Zeppe-Lin substitutes.
 
-```ini
-[controller]
-pkgctl = /.../build/subprojects/pkgctl/cli/pkgctl
-pkgstate_init = /.../build/subprojects/libpkgstate-posix/tools/pkgstate-init
+## Bootstrap
+
+The default bootstrap invocation is deliberately short:
+
+```sh
+./build/zlsystem bootstrap --privilege sudo --jobs 8
 ```
 
-Consumers must use that manifest or the target objects that produced it, rather
-than reconstructing paths from the build-tree layout.
+On a new workspace it:
 
-## Seed descriptors
+1. reads the committed default historical seed descriptor;
+2. downloads and SHA-256-verifies the rootfs archive and detached-signature
+   bytes, or accepts exact matching local bytes;
+3. extracts a private construction seed root;
+4. acquires and snapshots the exact `pkgsrc-foundation` revision declared in
+   `collections/foundation.ini`;
+5. snapshots the product-owned bootstrap qualification collection;
+6. initializes two empty native state authorities with the Meson-built
+   `pkgstate-init`;
+7. admits and runs the checked `seed-probe` transaction;
+8. admits and runs the checked `runtime-cohort-probe` transaction against
+   `pkgsrc-foundation`; and
+9. independently re-hashes and audits the six published bootstrap artifacts,
+   then emits `bootstrap.manifest`.
 
-`seeds/` records known Zeppe-Lin rootfs archives suitable for future bootstrap
-campaigns. A descriptor includes the canonical release URL, archive SHA-256,
-detached-signature URL, and signature-file SHA-256. The descriptor is source
-configuration; downloading, signature verification, extraction, and campaign
-admission are not implemented in the controller milestone.
+The product workspace defaults to `build/products/bootstrap`. Start-only
+authority is retained there. Later operations do not require the operator to
+repeat the seed hash, foundation revision, build policy, root coordinate, or
+controller paths:
 
-The current default is the fixed v1.2 rootfs published on 2026-02-22. The
-original v1.2 rootfs remains available as an explicitly selectable historical
-seed.
+```sh
+./build/zlsystem bootstrap resume
+./build/zlsystem bootstrap check
+./build/zlsystem bootstrap clean
+```
+
+`--max-steps` is live per-invocation control. `--jobs`,
+`--source-date-epoch`, seed selection and collection source overrides are
+start-only authority. Resume/check recover them from the workspace and reject
+their re-declaration.
+
+For offline seed acquisition, select the same committed descriptor but supply
+its exact bytes:
+
+```sh
+./build/zlsystem bootstrap \
+  --seed-file /path/to/rootfs-v1.2.1-20260222-x86_64.tar.xz \
+  --seed-signature-file /path/to/rootfs-v1.2.1-20260222-x86_64.tar.xz.sig \
+  --privilege sudo
+```
+
+A local `pkgsrc-foundation` checkout may be supplied with `--foundation-source`,
+but it must be clean and at the exact committed revision. The frontend snapshots
+that Git commit; it never consumes ambient working-tree edits.
+
+The detached signature is retained and hash-qualified because the historical
+release publishes it. This milestone does not claim detached-signature trust
+verification: no signing-key authority has yet been specified by this product.
+
+## Product qualification versus tests
+
+Real product qualification assets live under:
+
+```text
+products/bootstrap/qualification/collection/
+```
+
+`seed-probe` and `runtime-cohort-probe` are executed by real bootstrap products
+but are never distribution package membership.
+
+Development tests live separately under `tests/` and are grouped by product:
+
+```text
+contract:...
+bootstrap:...
+rootfs:...        future
+iso-install:...   future
+iso-live:...      future
+```
 
 ## Product direction
-
-The intended product chain is:
 
 ```text
 controller
@@ -94,11 +135,10 @@ rootfs
 iso-install   iso-live
 ```
 
-This is product composition, not package dependency policy. Package selection
-belongs to native collection/profile authority; `zeppe-lin-system` owns the
-host-side construction of system artifacts from those authorities.
+Package membership belongs to collection/profile authority. Product-specific
+preparation, overlays, qualification and artifact composition belong here.
 
-See `DESIGN.md` for the boundary and `TESTING.md` for the current assault model.
+See `DESIGN.md` and `TESTING.md` for the exact boundary.
 
 ## License
 

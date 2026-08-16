@@ -2,133 +2,197 @@
 
 ## Boundary
 
-`zeppe-lin-system` owns host-side construction of Zeppe-Lin system products. It
-does not become a package resolver, package builder, transaction engine, state
-store, or package-source collection.
+`zeppe-lin-system` owns host-side construction and qualification of Zeppe-Lin
+system products. It does not become a package resolver, recipe executor,
+transaction engine, installed-state store, or distribution package collection.
 
 ```text
-source-set authority        product input authority
-(pinned wraps)              (seed / collection / policy)
-        \                    /
-         \                  /
-          v                v
-           system orchestrator
-                  |
-                  v
-         native controller APIs/CLI
-                  |
-                  v
-             product artifact
+controller source authority      product input authority
+(pinned Meson wraps)             (seed / collections / policy)
+             \                    /
+              \                  /
+               v                v
+                system product composer
+                         |
+                         v
+                 pkgctl / pkgstate-init
+                         |
+                         v
+                 qualified product result
 ```
 
-The native package libraries remain the semantic owners of package operations.
-The system project composes them into host-facing products.
+The controller owns package semantics. The system project owns the mundane and
+product-specific ceremony needed to present exact authority to that controller.
 
 ## Controller source set
 
-The controller is built from exact repository commits recorded in
-`subprojects/*.wrap`. A wrap is source authority, not a hint. All Zeppe-Lin
-library dependency names in the controller closure are listed in Meson's
-`force_fallback_for` option so an installed library cannot satisfy a wrapped
-controller edge.
+The controller is one Meson graph built from exact repository commits recorded
+in `subprojects/*.wrap`. All provided `libpkg*` dependency names are listed in
+`force_fallback_for`, so an installed library cannot satisfy a wrapped edge.
 
-The current recursive closure contains 35 projects including `pkgctl`. `pkgctl`
-and `libpkgstate-posix` are explicit terminal subprojects because their
-executable target objects are needed by the system project. The remaining
-libraries are admitted lazily through ordinary Meson `dependency()` calls and
-their wrap-provided `meson.override_dependency()` values.
+The recursive closure contains 35 projects including `pkgctl`.
+`libpkgstate-posix` and `pkgctl` are explicit terminal subprojects because the
+system frontend consumes their executable target objects. The remaining
+libraries are admitted through normal Meson dependency fallback and
+`meson.override_dependency()`.
 
-Two repositories provide more than one dependency name:
+`libpkgsource` and `libpkgcatalog` each provide both their library and codec
+dependency name. Those aliases are part of the source lock.
 
-```text
-libpkgsource  -> libpkgsource, libpkgsource-codec
-libpkgcatalog -> libpkgcatalog, libpkgcatalog-codec
-```
-
-Those aliases are stated in the corresponding wrap `[provide]` sections. No
-controller repository is discovered by scanning GitHub or a sibling checkout.
-Changing the source set means changing a committed wrap revision.
-
-## Host authority
-
-The controller source set does not vendor general host toolchain libraries. The
-host supplies the C++ compiler, Meson/Ninja, Python 3, threads, OpenSSL
-`libcrypto`, libarchive, libcurl and libyaml. Meson qualifies these before the
-controller subprojects are configured.
-
-Maintainer tests, generated manuals, HTML documentation, and reference tools of
-wrapped libraries are explicitly disabled. They remain obligations of the
-individual repositories and must not turn a foreign-host controller build into
-a demand for Pandoc, Doxygen, scdoc, clang-format, or privileged integration
-facilities.
-
-`pkgstate-init` is the one non-pkgctl reference tool enabled because it is part
-of controller provisioning. It is used directly from the build graph and is not
-installed merely to make another subproject discover it.
-
-## No private installed-prefix feedback loop
-
-The controller build must not recreate the historical development harness:
+The controller build never recreates the old development feedback loop:
 
 ```text
-build A -> install into .toolchain -> mutate PKG_CONFIG_PATH -> build B
+build A -> install .toolchain -> mutate PKG_CONFIG_PATH -> build B
 ```
 
-Meson target/dependency objects connect the source projects in one build graph.
-No `.toolchain`, generated shell environment, `PKG_CONFIG_PATH`,
-`LD_LIBRARY_PATH`, or `CMAKE_PREFIX_PATH` is controller source authority.
+There is no `.toolchain`, generated shell environment, `PKG_CONFIG_PATH`,
+`LD_LIBRARY_PATH`, or `CMAKE_PREFIX_PATH` controller authority.
 
-The generated `controller-paths.ini` records exact executable paths from Meson
-target objects for the future system frontend. It is a build-tree projection,
-not durable package evidence.
+## Package-source authority is not a Meson dependency
+
+`pkgsrc-foundation` is deliberately not a wrap/subproject. It is data consumed
+by a system product, not code needed to build the controller.
+
+`collections/foundation.ini` therefore records a separate product-input source
+protocol with:
+
+```text
+logical collection name
+canonical Git URL
+exact 40-hex revision
+```
+
+At bootstrap admission the frontend either acquires that repository or accepts
+an explicit local checkout. The checkout must be clean and exactly at the
+recorded commit. The frontend then snapshots the commit with `git archive` into
+the private product workspace. Later transaction execution never observes a
+mutable collection worktree.
+
+Collection profiles and recipes remain distribution package authority.
+`zeppe-lin-system` does not infer package membership from directory enumeration.
 
 ## Seed authority
 
-A bootstrap seed is an external historical rootfs artifact, not current package
-truth and not controller source authority. A committed seed descriptor names:
+A seed is a historical rootfs artifact used as external construction authority.
+It is not current installed-state truth.
+
+A committed seed descriptor names the release coordinates and SHA-256 of both
+the rootfs archive and its detached-signature file. New workspaces verify the
+archive bytes before extraction. Supplying `--seed-file` is only an acquisition
+override: those bytes still have to equal the selected descriptor identity.
+
+The product never accepts a pre-extracted arbitrary directory accompanied by a
+claimed hash. It extracts the admitted archive itself into a private workspace,
+so retained seed identity refers to known source bytes rather than reconstructed
+filesystem truth.
+
+The detached signature is retained and hash-qualified but is not yet claimed as
+cryptographically verified publication authority. That requires an explicit
+signing-key trust boundary first.
+
+## Bootstrap product
+
+The current bootstrap product intentionally reproduces the proven bounded
+runtime-cohort campaign before broadening scope.
+
+It has two package catalogs:
 
 ```text
-protocol
-logical seed name
-architecture
-release namespace
-archive URL
-archive SHA-256
-signature URL
-signature-file SHA-256
+foundation
+    distribution package-source authority
+
+bootstrap-qualification
+    product-owned qualification recipes only
 ```
 
-Future bootstrap code must verify downloaded bytes before extracting them and
-must bind the verified seed identity into campaign admission. A successful past
-seed use must never be treated as observation that an unverified local file is
-still the same seed.
+The qualification catalog lives under:
 
-The initial descriptor protocol is x86_64-only because the current native
-bootstrap recipes are x86_64-only.
+```text
+products/bootstrap/qualification/collection/
+```
 
-## Product boundaries
+and currently contains:
 
-### Controller
+```text
+seed-probe
+runtime-cohort-probe
+```
 
-Pure host build. No privilege. No package transaction. Output is the exact
-build-tree `pkgctl` and `pkgstate-init` controller pair plus its source-set
-context.
+These recipes are not part of `@foundation`, `@rootfs`, or any distribution
+package set. They exist because the bootstrap product requires their successful
+execution before it accepts the result.
 
-### Bootstrap
+The first transaction checks the historical seed execution closure. The second
+constructs and checks:
 
-Future product. It will provision a verified seed root, admit a complete native
-build policy, and drive a bounded `pkgsrc-core-native` campaign through the
-controller. Stateful transaction/restart semantics remain inside `pkgctl` and
-its libraries.
+```text
+linux-api-headers -> glibc-bootstrap -> libgcc
+linux-api-headers -> glibc
+                    glibc <-> libgcc   (run)
+filesystem + glibc + libgcc -> runtime-cohort-probe
+```
 
-### Rootfs
+Dependency closure and runtime-cohort semantics are resolved by the native
+package stack. The system frontend does not order packages itself.
 
-Future product. It will converge an empty target to explicit native profile
-policy and emit/audit a rootfs artifact. Directory enumeration of a collection
-is not rootfs membership policy.
+## Workspace authority and restart
 
-### Installation and live media
+A bootstrap workspace is private durable product authority. At initialization
+it retains:
 
-Future products consuming a sealed rootfs artifact and their own media-specific
-inputs. They are not package dependency edges and are intentionally out of the
-initial design milestone.
+```text
+seed descriptor and verified archive identity
+foundation Git revision and private snapshot
+qualification snapshot digest
+exact pkgctl path and SHA-256
+exact pkgstate-init path and SHA-256
+native supervisor credentials
+complete build policy
+privilege command coordinate
+private seed-root coordinate
+```
+
+Command nonces and state-target identities are domain-separated from those
+values. Build policy contributes to the start nonce. Replacing either controller
+binary in place, changing explicit build policy, changing privilege command, or
+substituting collection/qualification authority fails closed.
+
+`pkgctl --resume` remains responsible for transaction restart semantics. The
+system frontend only recovers the already admitted physical/product coordinates
+and repeatedly resumes when the controller reports the explicit live step bound.
+
+## Bootstrap qualification
+
+A terminal controller report is necessary but not sufficient to accept the
+bootstrap product. `zlsystem bootstrap check` independently:
+
+- requires successfully terminal seed and runtime-cohort transactions;
+- verifies the seed-probe artifact retained by qualification;
+- requires exactly the six expected runtime-cohort artifacts;
+- re-hashes every published archive against retained controller evidence;
+- checks critical package members;
+- verifies final libgcc SONAME/dependencies and absence of RPATH/RUNPATH;
+- reconstructs filesystem/glibc/libgcc/probe package trees from the published
+  archives;
+- rechecks the probe NEEDED set, NODEFLIB and PT_INTERP contract; and
+- executes the sealed probe through the published glibc loader with only the
+  published glibc/libgcc library paths.
+
+Success emits `zeppe-lin.system.bootstrap-manifest/1`.
+
+## Product qualification is not developer testing
+
+`products/<product>/qualification/` contains checks a real product must pass.
+`tests/<product>/` contains hostile and regression tests that the implementation
+must pass. A probe may therefore be production qualification material while a
+synthetic corruption test for that probe belongs under `tests/bootstrap/`.
+
+## Future rootfs and media
+
+Rootfs composition will converge an empty managed target to explicit profile
+policy through the same controller. Collection membership is not rootfs
+membership and profiles never encode execution order.
+
+Installation and live media are later products consuming a qualified rootfs plus
+their own media-specific configuration/overlays. They are not package dependency
+edges and must not contaminate distribution collection authority.

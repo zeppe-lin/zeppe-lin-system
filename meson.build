@@ -107,6 +107,8 @@ dependency('yaml-0.1', version: '>=0.2.5', required: true)
 dependency('threads', required: true)
 
 python3 = find_program('python3', required: true)
+git = find_program('git', required: true)
+readelf = find_program('readelf', required: true)
 
 # Configure libpkgstate-posix explicitly so the controller can retain the exact
 # pkgstate-init target object. Its library dependencies continue to resolve
@@ -132,6 +134,20 @@ controller_paths_file = configure_file(
 
 message('controller paths: ' + controller_paths_file.full_path())
 
+frontend_configuration = configuration_data()
+frontend_configuration.set('SOURCE_ROOT', meson.project_source_root())
+frontend_configuration.set('BUILD_ROOT', meson.project_build_root())
+frontend_configuration.set('PKGCTL', pkgctl_exe.full_path())
+frontend_configuration.set('PKGSTATE_INIT', pkgstate_init_tool.full_path())
+frontend_configuration.set('GIT', git.full_path())
+frontend_configuration.set('READELF', readelf.full_path())
+zlsystem_frontend = configure_file(
+  input: 'tools/zlsystem.in',
+  output: 'zlsystem',
+  configuration: frontend_configuration,
+)
+message('system frontend: ' + zlsystem_frontend.full_path())
+
 test(
   'source-lock',
   python3,
@@ -149,4 +165,17 @@ test(
   python3,
   args: [files('tests/contracts/seed_contract_test.py'), meson.project_source_root()],
   suite: 'contract',
+)
+
+test(
+  'bootstrap-source-authority',
+  python3,
+  args: [files('tests/contracts/bootstrap_source_contract_test.py'), meson.project_source_root()],
+  suite: 'contract',
+)
+test(
+  'bootstrap-model',
+  python3,
+  args: [files('tests/bootstrap/bootstrap_model_test.py'), meson.project_source_root()],
+  suite: 'bootstrap',
 )

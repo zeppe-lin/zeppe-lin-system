@@ -4,3 +4,7 @@
 /subprojects/*/
 
 /tests/contracts/__pycache__/
+/tests/bootstrap/__pycache__/
+/zlsystem/__pycache__/
+
+/tools/__pycache__/

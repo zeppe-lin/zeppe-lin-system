@@ -60,6 +60,14 @@ def main() -> None:
             'controller alias')
     require(meson, "pkgctl_exe.full_path()", 'pkgctl target path authority')
     require(meson, "pkgstate_init_tool.full_path()", 'pkgstate-init path authority')
+    require(meson, "find_program('git', required: true)", 'product source acquisition tool')
+    require(meson, "find_program('readelf', required: true)", 'bootstrap qualification tool')
+    require(meson, "input: 'tools/zlsystem.in'", 'system frontend template')
+    require(meson, "output: 'zlsystem'", 'system frontend output')
+    require(meson, "frontend_configuration.set('PKGCTL', pkgctl_exe.full_path())",
+            'frontend pkgctl target authority')
+    require(meson, "frontend_configuration.set('PKGSTATE_INIT', pkgstate_init_tool.full_path())",
+            'frontend pkgstate-init target authority')
 
     # Controller composition must not recreate the historical installed-prefix
     # feedback loop or begin privileged system construction inside Meson.
@@ -87,7 +95,7 @@ def main() -> None:
     require(meson, "'libpkgcatalog-acquire:scan_tool=disabled'", 'scan tool suppression')
     require(meson, "'libpkgplan:reference_tools=disabled'", 'plan tool suppression')
 
-    # The first milestone has no system-product frontend yet.
+    # Product execution remains outside the Meson/Ninja build graph.
     for forbidden_target in ("run_target('bootstrap'", "run_target('rootfs'",
                              "alias_target('bootstrap'", "alias_target('rootfs'"):
         forbid(meson, forbidden_target, 'premature product target')
