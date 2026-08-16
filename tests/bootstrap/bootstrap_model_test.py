@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import io
+import stat
 import sys
 import tarfile
 import tempfile
@@ -102,22 +103,32 @@ artifact.0.sha256 abc
         temp = Path(temporary)
         good = temp / 'good.tar'
         with tarfile.open(good, 'w') as archive:
-            add_file(archive, 'usr/bin/tool', b'ok')
+            root = tarfile.TarInfo('.')
+            root.type = tarfile.DIRTYPE
+            root.mode = 0
+            archive.addfile(root)
+            add_file(archive, './usr/bin/tool', b'ok')
         output = temp / 'good'
         output.mkdir()
+        output_mode = stat.S_IMODE(output.stat().st_mode)
         bootstrap._extract_archive_bytes(good.read_bytes(), output)
         if (output / 'usr/bin/tool').read_bytes() != b'ok':
-            fail('safe archive extraction lost regular member')
+            fail('safe archive extraction lost regular member after root marker')
+        if stat.S_IMODE(output.stat().st_mode) != output_mode:
+            fail('archive root marker rewrote extraction-root metadata')
 
         escaping = temp / 'escaping.tar'
         with tarfile.open(escaping, 'w') as archive:
             add_file(archive, '../escape', b'bad')
+        escaping_root = temp / 'escaping-root'
         try:
-            bootstrap._extract_archive_bytes(escaping.read_bytes(), temp / 'escaping')
+            bootstrap.extract_seed_archive(escaping, escaping_root)
         except bootstrap.BootstrapError:
             pass
         else:
             fail('archive traversal member was admitted')
+        if escaping_root.exists():
+            fail('rejected seed archive retained a partial extraction root')
 
         symlink = temp / 'symlink.tar'
         with tarfile.open(symlink, 'w') as archive:

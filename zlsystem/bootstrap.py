@@ -292,9 +292,24 @@ def _safe_member_name(member: tarfile.TarInfo) -> PurePosixPath:
     return name
 
 
+def _archive_members(archive: tarfile.TarFile) -> list[tarfile.TarInfo]:
+    members: list[tarfile.TarInfo] = []
+    root_seen = False
+    for member in archive.getmembers():
+        if member.name.rstrip('/') == '.':
+            if root_seen:
+                raise BootstrapError('seed archive contains duplicate root entry')
+            if not member.isdir():
+                raise BootstrapError('seed archive root entry is not a directory')
+            root_seen = True
+            continue
+        members.append(member)
+    return members
+
+
 def _extract_archive_bytes(data: bytes, destination: Path) -> None:
     with tarfile.open(fileobj=io.BytesIO(data), mode='r:*') as archive:
-        members = archive.getmembers()
+        members = _archive_members(archive)
         declared_links: set[PurePosixPath] = set()
         names: set[PurePosixPath] = set()
         for member in members:
@@ -336,7 +351,16 @@ def extract_seed_archive(archive_path: Path, destination: Path) -> None:
         destination.mkdir(parents=True)
     with archive_path.open('rb') as stream:
         data = stream.read()
-    _extract_archive_bytes(data, destination)
+    try:
+        _extract_archive_bytes(data, destination)
+    except Exception as error:
+        try:
+            shutil.rmtree(destination)
+        except OSError as cleanup_error:
+            raise BootstrapError(
+                f'seed extraction failed and partial root cannot be removed: '
+                f'{destination}: {cleanup_error}') from error
+        raise
 
 
 def canonical_git_source(
