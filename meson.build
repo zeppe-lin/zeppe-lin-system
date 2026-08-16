@@ -120,6 +120,7 @@ pkgstate_init_tool = state_posix_project.get_variable('pkgstate_init_tool')
 # against the wrap-provided overrides rather than installed Zeppe-Lin libraries.
 pkgctl_project = subproject('pkgctl')
 pkgctl_exe = pkgctl_project.get_variable('pkgctl_exe')
+libpkgexec_linux_dep = dependency('libpkgexec-linux', required: true)
 
 alias_target('controller', pkgctl_exe, pkgstate_init_tool)
 
@@ -178,4 +179,22 @@ test(
   python3,
   args: [files('tests/bootstrap/bootstrap_model_test.py'), meson.project_source_root()],
   suite: 'bootstrap',
+)
+
+wrapped_isolation_test = executable(
+  'wrapped-isolation-test',
+  'tests/controller/wrapped_isolation_test.cpp',
+  dependencies: libpkgexec_linux_dep,
+  install: false,
+)
+test(
+  'wrapped-pkgctl-start',
+  pkgctl_exe,
+  args: ['--version'],
+  suite: 'controller',
+)
+test(
+  'wrapped-isolation',
+  wrapped_isolation_test,
+  suite: 'integration-privileged',
 )

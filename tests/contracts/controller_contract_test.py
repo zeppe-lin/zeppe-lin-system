@@ -56,6 +56,8 @@ def main() -> None:
     require(meson, "get_variable('pkgstate_init_tool')", 'pkgstate-init target export')
     require(meson, "subproject('pkgctl')", 'pkgctl subproject')
     require(meson, "get_variable('pkgctl_exe')", 'pkgctl target export')
+    require(meson, "dependency('libpkgexec-linux', required: true)",
+            'wrapped Linux execution dependency')
     require(meson, "alias_target('controller', pkgctl_exe, pkgstate_init_tool)",
             'controller alias')
     require(meson, "pkgctl_exe.full_path()", 'pkgctl target path authority')
@@ -68,6 +70,9 @@ def main() -> None:
             'frontend pkgctl target authority')
     require(meson, "frontend_configuration.set('PKGSTATE_INIT', pkgstate_init_tool.full_path())",
             'frontend pkgstate-init target authority')
+    require(meson, "'wrapped-pkgctl-start'", 'wrapped controller startup test')
+    require(meson, "'wrapped-isolation'", 'wrapped privileged isolation test')
+    require(meson, "suite: 'integration-privileged'", 'privileged wrapper test suite')
 
     # Controller composition must not recreate the historical installed-prefix
     # feedback loop or begin privileged system construction inside Meson.

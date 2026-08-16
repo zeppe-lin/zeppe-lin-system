@@ -11,7 +11,22 @@ meson setup build
 meson compile -C build controller
 meson test -C build --suite contract --print-errorlogs
 meson test -C build --suite bootstrap --print-errorlogs
+meson test -C build --suite controller --print-errorlogs
 ```
+
+The wrapped controller also has a privileged product-composition gate:
+
+```sh
+sudo meson test -C build --suite integration-privileged --print-errorlogs
+```
+
+This does not enable or import wrapped maintainer suites. It exercises the exact
+`libpkgexec-linux` body linked into the pinned controller composition and requires
+its end-to-end isolated filesystem capability probe to realize the root/resource
+mount and cleanup guarantees that `pkgctl build` will later require. An
+unprivileged or policy-restricted invocation skips this gate; a realization
+failure such as an internal cleanup `EBUSY` is a test failure, not a capability
+absence.
 
 ## Contract suite
 
@@ -20,9 +35,15 @@ URLs, exact revisions and codec providers.
 
 `controller-boundary` requires host dependency qualification, pinned fallback
 forcing, build-tree controller target extraction, executable `zlsystem`
-generation, and suppression of wrapped maintainer features. It rejects the old
+generation, suppression of wrapped maintainer features, and registration of the
+product-level wrapped startup/isolation gates. It rejects the old
 `.toolchain`/pkg-config feedback loop and privileged product execution inside
 Meson.
+
+`wrapped-pkgctl-start` proves that the composed build-tree `pkgctl` executable and
+its wrapped shared-library closure can start without falling back to an installed
+native stack. `wrapped-isolation` is the privilege-sensitive mechanism gate
+described above.
 
 `seed-descriptors` requires closed seed vocabulary, canonical release authority,
 SHA-256 archive/signature identities and an explicit default.
