@@ -1,0 +1,6 @@
+[wrap-git]
+url = https://github.com/zeppe-lin/libpkgcatalog.git
+revision = f7c3f5683d7c9c0a5c0f7774ab626db8d4e93350
+
+[provide]
+dependency_names = libpkgcatalog, libpkgcatalog-codec

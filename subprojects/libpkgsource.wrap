@@ -1,0 +1,6 @@
+[wrap-git]
+url = https://github.com/zeppe-lin/libpkgsource.git
+revision = c29bcb4ed78fd8ff0bedc0fe0f14185b723735db
+
+[provide]
+dependency_names = libpkgsource, libpkgsource-codec

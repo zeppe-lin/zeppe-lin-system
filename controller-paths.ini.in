@@ -1,0 +1,3 @@
+[controller]
+pkgctl = @PKGCTL@
+pkgstate_init = @PKGSTATE_INIT@
