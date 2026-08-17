@@ -51,7 +51,9 @@ SHA-256 archive/signature identities and an explicit default.
 `bootstrap-source-authority` requires the exact `pkgsrc-foundation` Git source
 revision, forbids treating it as a controller wrap, and requires the two
 bootstrap qualification recipes to live under product qualification rather than
-an ordinary product collection.
+an ordinary product collection. The runtime-cohort probe must qualify sealed
+`C.UTF-8` authority from the final glibc artifact and use realization rather than
+truth-reconstruction vocabulary for check resources.
 
 ## Bootstrap suite
 
@@ -59,7 +61,9 @@ an ordinary product collection.
 privilege or a real package transaction. It checks descriptor loading,
 policy-sensitive request identity, qualification-sensitive target identity,
 controller report parsing, safe archive extraction, path traversal refusal and
-write-through-symlink refusal.
+write-through-symlink refusal. It also pins the current foundation stage as
+seed-assisted and refuses to claim seed retirement before the hostile transition
+gate exists.
 
 The real product qualification is intentionally separate from this suite:
 
@@ -79,6 +83,19 @@ Linux host. Important hostile follow-ups include:
 - interrupted runtime-cohort construction/check;
 - corrupted published artifact before `bootstrap check`; and
 - privilege-context drift.
+
+
+The current bootstrap manifest must say:
+
+```text
+foundation-stage seed-assisted-runtime-qualified
+seed-retirement-qualified no
+```
+
+This is intentional negative evidence. A successful runtime cohort while the S0
+seed remains reachable is not proof that higher construction has ceased to depend
+on that seed. The future seed-retirement test must make S0 inaccessible before a
+native construction session and fail on any attempted fallback.
 
 ## Foreign-host controller qualification
 

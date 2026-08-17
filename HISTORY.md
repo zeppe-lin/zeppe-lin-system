@@ -2,6 +2,10 @@
 
 ## 0.1.0 — unreleased
 
+- Advance `pkgsrc-foundation` to the seed-retirement-oriented source boundary,
+  require final glibc 2.44 release 2 with sealed `C.UTF-8` authority, and record
+  the current product honestly as seed-assisted rather than prematurely claiming
+  that historical seed construction authority has been retired.
 - Establish the pinned 35-project native controller source set.
 - Build `pkgctl` and `pkgstate-init` directly from Meson subproject targets.
 - Advance `libpkgbuild-exec` to 3.3.1 and the pinned `pkgctl` consumer to

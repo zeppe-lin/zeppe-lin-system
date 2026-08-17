@@ -6,7 +6,7 @@ import re
 import sys
 from pathlib import Path
 
-EXPECTED_REVISION = 'd247718c6405f9f6e0a95b9681ab9b677ecda750'
+EXPECTED_REVISION = 'e14e06a908bc9a32c42a3dc7d56e26950ded1585'
 
 
 def fail(message: str) -> None:
@@ -50,6 +50,17 @@ def main() -> None:
         text = (qualification / name / 'recipe.yml').read_text(encoding='utf-8')
         if f'name: {name}' not in text:
             fail(f'{name} recipe identity differs')
+
+    runtime_probe = (qualification / 'runtime-cohort-probe' / 'recipe.yml').read_text(
+        encoding='utf-8')
+    for phrase in (
+            'glibc locale archive is absent',
+            'sealed glibc artifact lacks C.UTF-8 locale authority',
+            'realized glibc loader is absent'):
+        if phrase not in runtime_probe:
+            fail(f'runtime-cohort qualification omits foundation contract: {phrase}')
+    if 'reconstructed glibc loader' in runtime_probe:
+        fail('runtime-cohort qualification reverted to truth-reconstruction vocabulary')
 
 
 if __name__ == '__main__':

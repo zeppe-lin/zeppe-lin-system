@@ -57,9 +57,18 @@ build:
       fail 'filesystem /usr/lib64 alias differs'
     [ -x "$libc/usr/lib/ld-linux-x86-64.so.2" ] || fail 'glibc loader is absent'
     [ -f "$libc/usr/lib/libc.so.6" ] || fail 'glibc runtime is absent'
+    [ -x "$libc/usr/bin/localedef" ] || fail 'glibc localedef is absent'
+    [ -f "$libc/usr/lib/locale/locale-archive" ] || fail 'glibc locale archive is absent'
     [ -f "$libgcc/usr/lib/libgcc_s.so.1" ] || fail 'libgcc runtime is absent'
     [ ! -e "$libc/usr/lib/libgcc_s.so.1" ] || fail 'libgcc leaked into glibc package tree'
     [ ! -e "$libgcc/usr/lib/libc.so.6" ] || fail 'glibc leaked into libgcc package tree'
+    locale_listing=$("$libc/usr/lib/ld-linux-x86-64.so.2" \
+      --inhibit-cache \
+      --library-path "$libc/usr/lib:$libgcc/usr/lib" \
+      "$libc/usr/bin/localedef" --prefix="$libc" --list-archive) || \
+      fail 'sealed glibc locale archive is not readable'
+    printf '%s\n' "$locale_listing" | grep -Fx C.utf8 >/dev/null || \
+      fail 'sealed glibc artifact lacks C.UTF-8 locale authority'
 
     cat > cohort.c <<'C'
     #include <stdio.h>
@@ -169,9 +178,9 @@ check:
 
     [ "$(cat "$PKG_PACKAGE_ROOT/runtime-cohort.ok")" = qualified ] || \
       fail 'sealed probe marker differs'
-    [ -L "$filesystem/lib64" ] || fail 'reconstructed filesystem input lacks /lib64 alias'
-    [ -x "$libc/usr/lib/ld-linux-x86-64.so.2" ] || fail 'reconstructed glibc loader is absent'
-    [ -f "$libgcc/usr/lib/libgcc_s.so.1" ] || fail 'reconstructed libgcc runtime is absent'
+    [ -L "$filesystem/lib64" ] || fail 'realized filesystem input lacks /lib64 alias'
+    [ -x "$libc/usr/lib/ld-linux-x86-64.so.2" ] || fail 'realized glibc loader is absent'
+    [ -f "$libgcc/usr/lib/libgcc_s.so.1" ] || fail 'realized libgcc runtime is absent'
     [ -x "$probe" ] || fail 'sealed runtime cohort probe is absent'
 
     dynamic=$(readelf -d "$probe") || fail 'readelf rejected sealed runtime cohort probe'
@@ -209,14 +218,14 @@ check:
     output=$("$libc/usr/lib/ld-linux-x86-64.so.2" \
       --inhibit-cache \
       --library-path "$libc/usr/lib:$libgcc/usr/lib" "$probe") || \
-      fail 'reconstructed final runtime cohort did not execute'
-    [ "$output" = runtime-cohort-ok ] || fail 'reconstructed runtime cohort output differs'
+      fail 'realized final runtime cohort did not execute'
+    [ "$output" = runtime-cohort-ok ] || fail 'realized runtime cohort output differs'
 
     if printf hostile >"$PKG_PACKAGE_ROOT/runtime-cohort.write" 2>/dev/null; then
       fail 'checked probe package is writable'
     fi
     if printf hostile >"$libgcc/usr/lib/runtime-cohort.write" 2>/dev/null; then
-      fail 'reconstructed libgcc input is writable'
+      fail 'realized libgcc input is writable'
     fi
 architectures:
   build: [x86_64]

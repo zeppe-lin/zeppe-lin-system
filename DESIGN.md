@@ -93,7 +93,9 @@ signing-key trust boundary first.
 ## Bootstrap product
 
 The current bootstrap product intentionally reproduces the proven bounded
-runtime-cohort campaign before broadening scope.
+runtime-cohort campaign before broadening scope. It now consumes the first
+seed-retirement-oriented `pkgsrc-foundation` revision, but this stage remains
+explicitly seed-assisted: the historical seed still supplies construction tools.
 
 It has two package catalogs:
 
@@ -129,11 +131,34 @@ constructs and checks:
 linux-api-headers -> glibc-bootstrap -> libgcc
 linux-api-headers -> glibc
                     glibc <-> libgcc   (run)
-filesystem + glibc + libgcc -> runtime-cohort-probe
+filesystem + glibc(release 2, C.UTF-8) + libgcc -> runtime-cohort-probe
 ```
 
 Dependency closure and runtime-cohort semantics are resolved by the native
 package stack. The system frontend does not order packages itself.
+
+
+### Foundation stage and seed retirement
+
+The current product result is a **seed-assisted foundation candidate**, not a
+claim that the bootstrap parent has been retired. `@foundation` names the stable
+deployable substrate (`filesystem`, final `glibc`, and `libgcc`), while
+construction-only recipes such as `linux-api-headers` and `glibc-bootstrap`
+remain graph nodes rather than desired installation members.
+
+The current runtime-cohort transaction still executes construction tooling from
+the admitted historical seed. Therefore `bootstrap.manifest` records:
+
+```text
+foundation-stage seed-assisted-runtime-qualified
+seed-retirement-qualified no
+```
+
+The later seed-retirement milestone must compose exact native construction
+authority, revoke access to the historical seed, and successfully continue
+construction. Only that hostile transition may change the second fact to `yes`.
+Directory presence or successful execution while S0 remains reachable is not
+seed-retirement evidence.
 
 ## Workspace authority and restart
 
@@ -171,9 +196,10 @@ bootstrap product. `zlsystem bootstrap check` independently:
 - requires exactly the six expected runtime-cohort artifacts;
 - re-hashes every published archive against retained controller evidence;
 - checks critical package members;
+- verifies final glibc package coordinates and usable `C.UTF-8` locale authority;
 - verifies final libgcc SONAME/dependencies and absence of RPATH/RUNPATH;
-- reconstructs filesystem/glibc/libgcc/probe package trees from the published
-  archives;
+- realizes filesystem/glibc/libgcc/probe package trees from the published
+  archives without treating realization residue as evidence;
 - rechecks the probe NEEDED set, NODEFLIB and PT_INTERP contract; and
 - executes the sealed probe through the published glibc loader with only the
   published glibc/libgcc library paths.

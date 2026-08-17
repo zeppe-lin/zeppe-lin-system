@@ -50,6 +50,16 @@ EXPECTED_ARTIFACTS = (
     'filesystem', 'glibc', 'glibc-bootstrap', 'libgcc',
     'linux-api-headers', 'runtime-cohort-probe',
 )
+FOUNDATION_STAGE = 'seed-assisted-runtime-qualified'
+SEED_RETIREMENT_QUALIFIED = False
+EXPECTED_PACKAGE_COORDINATES = {
+    'filesystem': ('1.0.0', '1'),
+    'glibc': ('2.44', '2'),
+    'glibc-bootstrap': ('2.44', '1'),
+    'libgcc': ('16.1.0', '1'),
+    'linux-api-headers': ('7.1.8', '1'),
+    'runtime-cohort-probe': ('1.0', '1'),
+}
 
 
 class BootstrapError(RuntimeError):
@@ -999,6 +1009,8 @@ def check(context: BuildContext, options: BootstrapOptions) -> Path:
     if set(qualification_artifacts) != {'seed-probe'}:
         raise BootstrapError('seed qualification artifact set differs')
     seed_artifact = qualification_artifacts['seed-probe']
+    if seed_artifact.get('version') != '1.0' or seed_artifact.get('release') != '1':
+        raise BootstrapError('seed qualification package coordinate differs')
     if 'path' not in seed_artifact or 'sha256' not in seed_artifact:
         raise BootstrapError('seed qualification artifact report is incomplete')
     seed_artifact_path = Path(seed_artifact['path']).resolve()
@@ -1030,11 +1042,20 @@ def check(context: BuildContext, options: BootstrapOptions) -> Path:
         f'build-policy-file-creation-mask {marker["build_policy"]["file_creation_mask"]}',
         f'build-policy-source-date-epoch {marker["build_policy"]["source_date_epoch"]}',
         f'build-policy-output-layout {marker["build_policy"]["output_layout"]}',
+        f'foundation-stage {FOUNDATION_STAGE}',
+        f'seed-retirement-qualified {"yes" if SEED_RETIREMENT_QUALIFIED else "no"}',
     ]
 
     main_artifact_root = workspace / 'main' / 'artifacts'
     for package in EXPECTED_ARTIFACTS:
         artifact = artifacts[package]
+        expected_version, expected_release = EXPECTED_PACKAGE_COORDINATES[package]
+        if (artifact.get('version') != expected_version
+                or artifact.get('release') != expected_release):
+            raise BootstrapError(
+                f'{package}: package coordinate differs; expected='
+                f'{expected_version}-{expected_release} observed='
+                f'{artifact.get("version")}-{artifact.get("release")}')
         required = {'path', 'sha256', 'binding-identity', 'image-identity'}
         if not required.issubset(artifact):
             raise BootstrapError(f'{package}: retained artifact report is incomplete')
@@ -1057,7 +1078,8 @@ def check(context: BuildContext, options: BootstrapOptions) -> Path:
         'glibc': (
             'usr/include/gnu/stubs.h', 'usr/lib/crt1.o', 'usr/lib/crti.o',
             'usr/lib/crtn.o', 'usr/lib/libc.so.6', 'usr/lib/libc_nonshared.a',
-            'usr/lib/ld-linux-x86-64.so.2',
+            'usr/lib/ld-linux-x86-64.so.2', 'usr/bin/localedef',
+            'usr/lib/locale/locale-archive',
         ),
         'linux-api-headers': ('usr/include/linux/types.h',),
         'glibc-bootstrap': (
@@ -1116,6 +1138,13 @@ def check(context: BuildContext, options: BootstrapOptions) -> Path:
             raise BootstrapError('published runtime-cohort probe names the wrong interpreter ABI')
         loader = root / 'glibc' / 'usr/lib/ld-linux-x86-64.so.2'
         library_path = f'{root / "glibc" / "usr/lib"}:{root / "libgcc" / "usr/lib"}'
+        localedef = root / 'glibc' / 'usr/bin/localedef'
+        locale_listing = run_command([
+            loader, '--inhibit-cache', '--library-path', library_path, localedef,
+            f'--prefix={root / "glibc"}', '--list-archive',
+        ], check=True).stdout.splitlines()
+        if 'C.utf8' not in locale_listing:
+            raise BootstrapError('published glibc artifact lacks usable C.UTF-8 locale authority')
         execution = run_command([
             loader, '--inhibit-cache', '--library-path', library_path, probe,
         ], check=True)

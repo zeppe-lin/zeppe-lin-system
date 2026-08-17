@@ -32,6 +32,12 @@ def main() -> None:
     foundation = bootstrap.load_foundation_descriptor(root)
     if foundation.name != 'foundation':
         fail('foundation descriptor does not load')
+    if bootstrap.EXPECTED_PACKAGE_COORDINATES.get('glibc') != ('2.44', '2'):
+        fail('bootstrap model does not require the C.UTF-8-bearing glibc release')
+    if bootstrap.FOUNDATION_STAGE != 'seed-assisted-runtime-qualified':
+        fail('bootstrap model misstates the current foundation stage')
+    if bootstrap.SEED_RETIREMENT_QUALIFIED:
+        fail('bootstrap model claims seed retirement before the hostile gate exists')
     seed = bootstrap.load_seed_descriptor(root, None)
     if seed.architecture != 'x86_64' or len(seed.sha256) != 64:
         fail('default seed descriptor does not load')
