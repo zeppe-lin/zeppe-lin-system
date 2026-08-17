@@ -34,30 +34,40 @@ def main() -> None:
         fail('foundation descriptor does not load')
     if bootstrap.EXPECTED_PACKAGE_COORDINATES.get('glibc') != ('2.44', '2'):
         fail('bootstrap model does not require the C.UTF-8-bearing glibc release')
-    if bootstrap.FOUNDATION_STAGE != 'seed-assisted-runtime-qualified':
+    if bootstrap.FOUNDATION_STAGE != 'seed-assisted-foundation-root-qualified':
         fail('bootstrap model misstates the current foundation stage')
+    if bootstrap.FOUNDATION_MEMBERS != ('filesystem', 'glibc', 'libgcc'):
+        fail('bootstrap model foundation membership differs from @foundation authority')
     if bootstrap.SEED_RETIREMENT_QUALIFIED:
         fail('bootstrap model claims seed retirement before the hostile gate exists')
+    for required_runtime in (
+            'artifacts', 'target-locks', 'application-journals',
+            'application-checkpoints', 'lifecycle-sessions'):
+        if required_runtime not in bootstrap.RUNTIME_DIRS:
+            fail(f'mixed run runtime omits required private hierarchy: {required_runtime}')
     seed = bootstrap.load_seed_descriptor(root, None)
     if seed.architecture != 'x86_64' or len(seed.sha256) != 64:
         fail('default seed descriptor does not load')
 
     marker = {
         'seed': {'sha256': seed.sha256},
-        'foundation': {'revision': foundation.revision},
+        'foundation': {
+            'revision': foundation.revision,
+            'target_root': '/tmp/bootstrap-workspace/main/foundation-root',
+        },
         'qualification': {'sha256': '1' * 64},
         'build_policy': {
-            'parallelism': 4,
+            'parallelism': 7,
             'source_date_epoch': 0,
             'file_creation_mask': '0022',
             'output_layout': 'package-root',
         },
     }
     main_nonce = bootstrap.nonce_for('runtime-cohort-probe', marker)
-    marker['build_policy']['parallelism'] = 8
+    marker['build_policy']['parallelism'] = 11
     if bootstrap.nonce_for('runtime-cohort-probe', marker) == main_nonce:
         fail('build policy does not contribute to bootstrap request identity')
-    marker['build_policy']['parallelism'] = 4
+    marker['build_policy']['parallelism'] = 7
     marker.update({
         'workspace': '/tmp/bootstrap-workspace',
         'seed': {**marker['seed'], 'root': '/tmp/bootstrap-workspace/seed-root',
@@ -73,13 +83,50 @@ def main() -> None:
         context, marker, qualification=False, maximum_steps=8)
     resume_args = bootstrap._resume_pkgctl_args(
         context, marker, qualification=False, maximum_steps=8)
-    for token in ('--collection', '--build-parallelism', '--build-source-date-epoch', '--start'):
+    qualification_args = bootstrap._start_pkgctl_args(
+        context, marker, qualification=True, maximum_steps=8)
+    if start_args[1] != 'run':
+        fail('main bootstrap stage is not one mixed native run transaction')
+    if qualification_args[1] != 'build':
+        fail('seed qualification lost the restricted build frontend')
+    expected_goals = {
+        'build=runtime-cohort-probe', 'check=runtime-cohort-probe',
+        'run=@foundation',
+    }
+    observed_goals = {
+        start_args[index + 1]
+        for index, token in enumerate(start_args[:-1]) if token == '--goal'
+    }
+    if observed_goals != expected_goals:
+        fail(f'mixed run goals differ: {sorted(observed_goals)}')
+    for token in ('--prefer-catalog', '--converge-exact', '--lifecycle-root',
+                  '--target-root'):
+        if token not in start_args:
+            fail(f'mixed run omits required composition authority: {token}')
+    if '--artifact-root' in start_args:
+        fail('mixed run exposes construction artifacts as build-frontend authority')
+    if '--artifact-root' not in qualification_args:
+        fail('seed qualification lost its explicit public artifact root')
+    parallelism_index = start_args.index('--build-parallelism')
+    if start_args[parallelism_index + 1] != '7':
+        fail('mixed run did not preserve non-default admitted build parallelism')
+    target_index = start_args.index('--target-root')
+    if start_args[target_index + 1] != '/tmp/bootstrap-workspace/main/foundation-root':
+        fail('mixed run target is not the private foundation managed root')
+    lifecycle_index = start_args.index('--lifecycle-root')
+    if start_args[lifecycle_index + 1] != '/tmp/bootstrap-workspace/seed-root':
+        fail('seed-assisted lifecycle authority is not explicitly bounded to S0')
+    for token in ('--collection', '--build-parallelism', '--build-source-date-epoch',
+                  '--goal', '--prefer-catalog', '--converge-exact', '--start'):
         if token not in start_args:
             fail(f'start command omits admitted semantic option: {token}')
         if token in resume_args:
             fail(f'resume command redeclares start-only semantic option: {token}')
-    if '--resume' not in resume_args:
-        fail('resume command omits retained request identity')
+    if resume_args[1] != 'run' or '--resume' not in resume_args:
+        fail('main resume does not recover the retained mixed run request')
+    for token in ('--lifecycle-root', '--target-root'):
+        if token not in resume_args:
+            fail(f'main resume omits live physical authority: {token}')
     try:
         bootstrap._reject_start_redeclaration(
             bootstrap.BootstrapOptions(Path('/tmp/work'), jobs=4))
@@ -221,6 +268,20 @@ artifact.0.sha256 abc
             fail('invalid seed unexpectedly initialized a bootstrap workspace')
         if failed_workspace.exists():
             fail('failed new bootstrap initialization retained an unmarked workspace')
+
+        foundation_root = temp / 'foundation-root'
+        (foundation_root / 'usr/lib').mkdir(parents=True)
+        (foundation_root / 'usr/bin').mkdir(parents=True)
+        (foundation_root / 'lib64').symlink_to('usr/lib64')
+        (foundation_root / 'usr/lib64').symlink_to('lib')
+        bootstrap._validate_foundation_root_scope(foundation_root)
+        (foundation_root / 'usr/bin/gcc').write_text('poison\n', encoding='utf-8')
+        try:
+            bootstrap._validate_foundation_root_scope(foundation_root)
+        except bootstrap.BootstrapError:
+            pass
+        else:
+            fail('foundation managed root admitted seed/toolchain residue')
 
         unmarked_workspace = temp / 'unmarked-bootstrap'
         unmarked_workspace.mkdir()

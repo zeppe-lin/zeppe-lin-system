@@ -124,8 +124,8 @@ These recipes are not part of `@foundation`, `@rootfs`, or any distribution
 package set. They exist because the bootstrap product requires their successful
 execution before it accepts the result.
 
-The first transaction checks the historical seed execution closure. The second
-constructs and checks:
+The first transaction checks the historical seed execution closure. The second is
+one mixed native `pkgctl run` transaction. It constructs/checks:
 
 ```text
 linux-api-headers -> glibc-bootstrap -> libgcc
@@ -135,22 +135,29 @@ filesystem + glibc(release 2, C.UTF-8) + libgcc -> runtime-cohort-probe
 ```
 
 Dependency closure and runtime-cohort semantics are resolved by the native
-package stack. The system frontend does not order packages itself.
+package stack. The same transaction also selects `run=@foundation` with exact
+convergence into `main/foundation-root`; construction-only graph nodes are retained
+as artifacts/evidence but are not desired installed state. The system frontend does
+not order packages or hand-extract archives itself.
 
 
 ### Foundation stage and seed retirement
 
-The current product result is a **seed-assisted foundation candidate**, not a
+The current product result is a **seed-assisted qualified foundation root**, not a
 claim that the bootstrap parent has been retired. `@foundation` names the stable
 deployable substrate (`filesystem`, final `glibc`, and `libgcc`), while
 construction-only recipes such as `linux-api-headers` and `glibc-bootstrap`
-remain graph nodes rather than desired installation members.
+remain graph nodes/artifacts rather than desired installed state.
 
-The current runtime-cohort transaction still executes construction tooling from
-the admitted historical seed. Therefore `bootstrap.manifest` records:
+The main transaction converges that exact profile into a private managed target and
+retains its construction artifacts beneath the run-private runtime hierarchy. It
+still executes construction/lifecycle authority from the admitted historical seed.
+Therefore `bootstrap.manifest` records:
 
 ```text
-foundation-stage seed-assisted-runtime-qualified
+foundation-stage seed-assisted-foundation-root-qualified
+foundation-profile @foundation
+foundation-members filesystem,glibc,libgcc
 seed-retirement-qualified no
 ```
 
@@ -167,7 +174,7 @@ it retains:
 
 ```text
 seed descriptor and verified archive identity
-foundation Git revision and private snapshot
+foundation Git revision, private snapshot and managed-root coordinate
 qualification snapshot digest
 exact pkgctl path and SHA-256
 exact pkgstate-init path and SHA-256
@@ -191,12 +198,14 @@ and repeatedly resumes when the controller reports the explicit live step bound.
 A terminal controller report is necessary but not sufficient to accept the
 bootstrap product. `zlsystem bootstrap check` independently:
 
-- requires successfully terminal seed and runtime-cohort transactions;
+- requires successfully terminal seed qualification and mixed foundation transactions;
 - verifies the seed-probe artifact retained by qualification;
-- requires exactly the six expected runtime-cohort artifacts;
-- re-hashes every published archive against retained controller evidence;
+- requires exactly the six expected retained construction artifacts;
+- re-hashes every private run archive against retained controller evidence;
 - checks critical package members;
 - verifies final glibc package coordinates and usable `C.UTF-8` locale authority;
+- rejects a public main-stage artifact root, verifies selected libc/locale/libgcc bytes
+  in the managed foundation root, and rejects obvious seed/build-only residue;
 - verifies final libgcc SONAME/dependencies and absence of RPATH/RUNPATH;
 - realizes filesystem/glibc/libgcc/probe package trees from the published
   archives without treating realization residue as evidence;

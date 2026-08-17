@@ -2,6 +2,11 @@
 
 ## 0.1.0 — unreleased
 
+- Compose the exact `@foundation` profile into a private managed foundation root in
+  the same native transaction that constructs/checks the runtime cohort. Preserve
+  admitted build parallelism/epoch under `pkgctl run`, retain construction artifacts
+  only as private durable run evidence, and qualify the installed root against selected
+  artifact bytes while continuing to record seed retirement as unproven.
 - Advance `pkgsrc-foundation` to the seed-retirement-oriented source boundary,
   require final glibc 2.44 release 2 with sealed `C.UTF-8` authority, and record
   the current product honestly as seed-assisted rather than prematurely claiming

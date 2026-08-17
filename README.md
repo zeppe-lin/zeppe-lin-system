@@ -60,19 +60,21 @@ On a new workspace it:
 6. initializes two empty native state authorities with the Meson-built
    `pkgstate-init`;
 7. admits and runs the checked `seed-probe` transaction;
-8. admits and runs the checked `runtime-cohort-probe` transaction against
-   `pkgsrc-foundation`; and
-9. independently re-hashes and audits the six published bootstrap artifacts,
-   including the final glibc release and its usable `C.UTF-8` locale authority,
-   then emits `bootstrap.manifest`.
+8. admits one mixed native transaction that constructs/checks
+   `runtime-cohort-probe` while converging exact `@foundation` membership into the
+   private `main/foundation-root`; and
+9. independently re-hashes the six retained construction artifacts, verifies the
+   managed foundation root against selected artifact bytes and usable `C.UTF-8`
+   authority, and then emits `bootstrap.manifest`.
 
 
-The current bootstrap is deliberately **seed-assisted**. It qualifies the stable
-foundation runtime produced from the admitted historical seed but does not yet
-claim that native construction can continue after that seed disappears. The
-manifest therefore records `foundation-stage seed-assisted-runtime-qualified`
-and `seed-retirement-qualified no`. A later hostile seed-retirement gate, not
-this runtime-cohort success, owns the transition to seed-free construction.
+The current bootstrap is deliberately **seed-assisted**. It now composes the stable
+`@foundation` substrate (`filesystem`, final `glibc`, `libgcc`) into a real managed
+root, but construction and lifecycle execution authority for this transaction still
+comes from the admitted historical seed. The manifest therefore records
+`foundation-stage seed-assisted-foundation-root-qualified` and
+`seed-retirement-qualified no`. A later hostile seed-retirement gate, not root
+composition itself, owns the transition to seed-free construction.
 
 The product workspace defaults to `build/products/bootstrap`. Start-only
 authority is retained there. Later operations do not require the operator to

@@ -61,9 +61,11 @@ truth-reconstruction vocabulary for check resources.
 privilege or a real package transaction. It checks descriptor loading,
 policy-sensitive request identity, qualification-sensitive target identity,
 controller report parsing, safe archive extraction, path traversal refusal and
-write-through-symlink refusal. It also pins the current foundation stage as
-seed-assisted and refuses to claim seed retirement before the hostile transition
-gate exists.
+write-through-symlink refusal. It also requires the main stage to be one mixed
+`pkgctl run` transaction with exact `@foundation` convergence, attacks a non-default
+build parallelism value so the frontend cannot fall back to one job, rejects public
+main-stage artifact authority, and poisons a synthetic foundation root with compiler
+residue. Seed retirement remains explicitly unproven.
 
 The real product qualification is intentionally separate from this suite:
 
@@ -88,14 +90,16 @@ Linux host. Important hostile follow-ups include:
 The current bootstrap manifest must say:
 
 ```text
-foundation-stage seed-assisted-runtime-qualified
+foundation-stage seed-assisted-foundation-root-qualified
+foundation-profile @foundation
+foundation-members filesystem,glibc,libgcc
 seed-retirement-qualified no
 ```
 
-This is intentional negative evidence. A successful runtime cohort while the S0
-seed remains reachable is not proof that higher construction has ceased to depend
-on that seed. The future seed-retirement test must make S0 inaccessible before a
-native construction session and fail on any attempted fallback.
+This is intentional negative evidence. A correctly converged `@foundation` root while
+the S0 seed remains reachable is still not proof that higher construction has ceased
+to depend on that seed. The future seed-retirement test must make S0 inaccessible
+before a native construction session and fail on any attempted fallback.
 
 ## Foreign-host controller qualification
 

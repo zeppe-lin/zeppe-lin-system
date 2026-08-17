@@ -31,8 +31,11 @@ OUTPUT_LAYOUT = 'package-root'
 HEX40 = re.compile(r'^[0-9a-f]{40}$')
 HEX64 = re.compile(r'^[0-9a-f]{64}$')
 RUNTIME_DIRS = (
-    'command-evidence', 'run', 'evidence', 'effects', 'content',
-    'construction-sessions', 'package-outputs', 'check-temporary',
+    'command-evidence', 'run', 'evidence', 'effects',
+    'target-locks', 'application-journals', 'application-checkpoints',
+    'payload', 'capture', 'rejected', 'completed', 'effect-bodies',
+    'content', 'construction-sessions', 'package-outputs', 'artifacts',
+    'check-temporary', 'lifecycle-sessions',
 )
 SEED_ROOT_DIRS = (
     ('dev', 0o755),
@@ -50,7 +53,8 @@ EXPECTED_ARTIFACTS = (
     'filesystem', 'glibc', 'glibc-bootstrap', 'libgcc',
     'linux-api-headers', 'runtime-cohort-probe',
 )
-FOUNDATION_STAGE = 'seed-assisted-runtime-qualified'
+FOUNDATION_MEMBERS = ('filesystem', 'glibc', 'libgcc')
+FOUNDATION_STAGE = 'seed-assisted-foundation-root-qualified'
 SEED_RETIREMENT_QUALIFIED = False
 EXPECTED_PACKAGE_COORDINATES = {
     'filesystem': ('1.0.0', '1'),
@@ -601,20 +605,47 @@ def _invoke_pkgstate_init(
         raise BootstrapError('pkgstate-init refused bootstrap state authority')
 
 
-def _runtime_arguments(base: Path) -> list[str]:
-    return ['--runtime-root', str(base / 'runtime'), '--artifact-root', str(base / 'artifacts')]
-
-
-def _credential_arguments(marker: Mapping[str, object]) -> list[str]:
+def _credential_arguments(
+    marker: Mapping[str, object], *, lifecycle: bool = False,
+) -> list[str]:
     supervisor = marker['supervisor']
     uid = int(supervisor['user_id'])
     gid = int(supervisor['group_id'])
     groups = [int(value) for value in supervisor['groups']]
-    args = ['--build-user-id', str(uid), '--build-group-id', str(gid)]
+    prefix = 'lifecycle' if lifecycle else 'build'
+    args = [f'--{prefix}-user-id', str(uid), f'--{prefix}-group-id', str(gid)]
     for group in groups:
         if group != gid:
-            args += ['--build-supplementary-group', str(group)]
+            args += [f'--{prefix}-supplementary-group', str(group)]
     return args
+
+
+def _foundation_root(marker: Mapping[str, object]) -> Path:
+    root = Path(marker['foundation']['target_root'])
+    if not root.is_absolute() or root != Path(os.path.normpath(root)):
+        raise BootstrapError('retained foundation root coordinate is not absolute/normalized')
+    return root
+
+
+def _validate_foundation_root_scope(root: Path) -> None:
+    if not root.is_dir() or root.is_symlink():
+        raise BootstrapError('foundation managed root is absent or not a directory')
+    expected_links = {
+        'lib64': 'usr/lib64',
+        'usr/lib64': 'lib',
+    }
+    for relative, target in expected_links.items():
+        path = root / relative
+        if not path.is_symlink() or os.readlink(path) != target:
+            raise BootstrapError(
+                f'foundation managed root topology differs: {relative}')
+    for relative in (
+            'usr/bin/bash', 'usr/bin/gcc', 'usr/bin/make',
+            'usr/include/linux/types.h', 'usr/libexec/runtime-cohort-probe',
+            'runtime-cohort.ok'):
+        if (root / relative).exists():
+            raise BootstrapError(
+                f'foundation managed root contains non-profile/seed residue: {relative}')
 
 
 def _start_pkgctl_args(
@@ -633,28 +664,49 @@ def _start_pkgctl_args(
             '--collection', f'bootstrap-qualification={workspace / "qualification" / "collection"}',
         ]
         nonce = nonce_for('seed-probe', marker)
+        args = [context.pkgctl, 'build', subject, '--check',
+                '--canonical-store', base / 'state']
     else:
-        subject = 'runtime-cohort-probe'
         collections = [
             '--collection', f'foundation={workspace / "collections" / "foundation"}',
             '--collection', f'bootstrap-qualification={workspace / "qualification" / "collection"}',
         ]
         nonce = nonce_for('runtime-cohort-probe', marker)
-    args = [context.pkgctl, 'build', subject, '--check',
-            '--canonical-store', base / 'state']
+        args = [
+            context.pkgctl, 'run',
+            '--canonical-store', base / 'state',
+        ]
     args += collections
     args += [
         '--build-architecture', 'x86_64',
         '--target-architecture', 'x86_64',
+    ]
+    if not qualification:
+        args += [
+            '--goal', 'build=runtime-cohort-probe',
+            '--goal', 'check=runtime-cohort-probe',
+            '--goal', 'run=@foundation',
+            '--prefer-catalog',
+            '--converge-exact',
+        ]
+    args += [
         '--start', nonce,
         '--build-parallelism', str(policy['parallelism']),
         '--build-source-date-epoch', str(policy['source_date_epoch']),
         '--runtime-root', base / 'runtime',
         '--build-root', root,
-        '--artifact-root', base / 'artifacts',
-        '--interpreter', interpreter,
     ]
+    if qualification:
+        args += ['--artifact-root', base / 'artifacts']
+    else:
+        args += [
+            '--lifecycle-root', root,
+            '--target-root', _foundation_root(marker),
+        ]
+    args += ['--interpreter', interpreter]
     args += _credential_arguments(marker)
+    if not qualification:
+        args += _credential_arguments(marker, lifecycle=True)
     args += ['--max-steps', str(maximum_steps)]
     args += _binding_arguments(marker, qualification)
     return [str(value) for value in args]
@@ -670,15 +722,23 @@ def _resume_pkgctl_args(
     base, root, interpreter = _controller_args(marker, qualification=qualification)
     nonce = nonce_for('seed-probe' if qualification else 'runtime-cohort-probe', marker)
     args = [
-        context.pkgctl, 'build',
+        context.pkgctl, 'build' if qualification else 'run',
         '--canonical-store', base / 'state',
         '--resume', nonce,
         '--runtime-root', base / 'runtime',
         '--build-root', root,
-        '--artifact-root', base / 'artifacts',
-        '--interpreter', interpreter,
     ]
+    if qualification:
+        args += ['--artifact-root', base / 'artifacts']
+    else:
+        args += [
+            '--lifecycle-root', root,
+            '--target-root', _foundation_root(marker),
+        ]
+    args += ['--interpreter', interpreter]
     args += _credential_arguments(marker)
+    if not qualification:
+        args += _credential_arguments(marker, lifecycle=True)
     args += ['--max-steps', str(maximum_steps)]
     return [str(value) for value in args]
 
@@ -882,6 +942,7 @@ def _initialize_attempt(context: BuildContext, options: BootstrapOptions) -> dic
             'url': foundation.url,
             'revision': foundation.revision,
             'snapshot': str(foundation_snapshot),
+            'target_root': str(workspace / 'main' / 'foundation-root'),
         },
         'qualification': {
             'sha256': qualification_sha,
@@ -914,9 +975,12 @@ def _initialize_attempt(context: BuildContext, options: BootstrapOptions) -> dic
     for name in ('qualification', 'main'):
         base = workspace / name
         (base / 'runtime').mkdir(parents=True, exist_ok=True)
-        (base / 'artifacts').mkdir(parents=True, exist_ok=True)
         for directory in RUNTIME_DIRS:
             (base / 'runtime' / directory).mkdir(parents=True, exist_ok=True)
+        if name == 'qualification':
+            (base / 'artifacts').mkdir(parents=True, exist_ok=True)
+        else:
+            _foundation_root(marker).mkdir(parents=True, exist_ok=True)
 
     try:
         _invoke_pkgstate_init(context, marker, qualification=True, privilege=privilege)
@@ -1043,10 +1107,15 @@ def check(context: BuildContext, options: BootstrapOptions) -> Path:
         f'build-policy-source-date-epoch {marker["build_policy"]["source_date_epoch"]}',
         f'build-policy-output-layout {marker["build_policy"]["output_layout"]}',
         f'foundation-stage {FOUNDATION_STAGE}',
+        'foundation-profile @foundation',
+        f'foundation-members {",".join(FOUNDATION_MEMBERS)}',
+        f'foundation-managed-target {identity_for("managed-target", marker)}',
+        f'foundation-state-store {identity_for("state-store", marker)}',
+        f'foundation-root-view {identity_for("root-view", marker)}',
         f'seed-retirement-qualified {"yes" if SEED_RETIREMENT_QUALIFIED else "no"}',
     ]
 
-    main_artifact_root = workspace / 'main' / 'artifacts'
+    main_artifact_root = workspace / 'main' / 'runtime' / 'artifacts'
     for package in EXPECTED_ARTIFACTS:
         artifact = artifacts[package]
         expected_version, expected_release = EXPECTED_PACKAGE_COORDINATES[package]
@@ -1072,6 +1141,11 @@ def check(context: BuildContext, options: BootstrapOptions) -> Path:
         lines.append(
             f'package {package} sha256 {observed} '
             f'binding {artifact["binding-identity"]} image {artifact["image-identity"]}')
+
+    foundation_root = _foundation_root(marker).resolve()
+    _validate_foundation_root_scope(foundation_root)
+    if (workspace / 'main' / 'artifacts').exists():
+        raise BootstrapError('main run retained a public build artifact root')
 
     required_members = {
         'filesystem': ('lib64', 'usr/lib64'),
@@ -1112,6 +1186,27 @@ def check(context: BuildContext, options: BootstrapOptions) -> Path:
             raise BootstrapError('published glibc package tree contains libgcc runtime bytes')
         if (root / 'libgcc' / 'usr/lib/libc.so.6').exists():
             raise BootstrapError('published libgcc package tree contains glibc runtime bytes')
+
+        for relative, source in (
+                ('usr/lib/libc.so.6', root / 'glibc' / 'usr/lib/libc.so.6'),
+                ('usr/lib/locale/locale-archive',
+                 root / 'glibc' / 'usr/lib/locale/locale-archive'),
+                ('usr/lib/libgcc_s.so.1', root / 'libgcc' / 'usr/lib/libgcc_s.so.1')):
+            target = foundation_root / relative
+            if not target.is_file() or sha256_file(target) != sha256_file(source):
+                raise BootstrapError(
+                    f'foundation managed root differs from selected artifact bytes: {relative}')
+
+        installed_loader = foundation_root / 'usr/lib/ld-linux-x86-64.so.2'
+        installed_localedef = foundation_root / 'usr/bin/localedef'
+        installed_locale_listing = run_command([
+            installed_loader, '--inhibit-cache', '--library-path',
+            foundation_root / 'usr/lib', installed_localedef,
+            f'--prefix={foundation_root}', '--list-archive',
+        ], check=True).stdout.splitlines()
+        if 'C.utf8' not in installed_locale_listing:
+            raise BootstrapError(
+                'foundation managed root lacks usable C.UTF-8 locale authority')
 
         libgcc = root / 'libgcc' / 'usr/lib/libgcc_s.so.1'
         libgcc_dynamic = run_command([context.readelf, '-d', libgcc], check=True).stdout
@@ -1167,7 +1262,7 @@ def run(context: BuildContext, options: BootstrapOptions) -> Path:
     _run_until_terminal(
         context, marker, qualification=True,
         maximum_steps=options.maximum_steps, privilege=privilege)
-    print('bootstrap: constructing and checking final runtime cohort')
+    print('bootstrap: constructing/checking cohort and converging @foundation')
     _run_until_terminal(
         context, marker, qualification=False,
         maximum_steps=options.maximum_steps, privilege=privilege)
