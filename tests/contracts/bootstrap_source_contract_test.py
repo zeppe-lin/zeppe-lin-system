@@ -6,7 +6,7 @@ import re
 import sys
 from pathlib import Path
 
-EXPECTED_REVISION = 'e14e06a908bc9a32c42a3dc7d56e26950ded1585'
+EXPECTED_REVISION = '70a4eceb6513022406f7a24d7380146956eff5b6'
 
 
 def fail(message: str) -> None:
