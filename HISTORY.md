@@ -4,6 +4,9 @@
 
 - Establish the pinned 35-project native controller source set.
 - Build `pkgctl` and `pkgstate-init` directly from Meson subproject targets.
+- Advance `libpkgbuild-exec` to 3.3.1 and the pinned `pkgctl` consumer to
+  its matching 3.3.1 dependency floor, closing admitted package-image timestamp
+  authority in the exact wrapped controller composition.
 - Advance the pinned Linux execution provider to `libpkgexec-linux` 0.7.1 and
   the terminal controller to `pkgctl` 0.39.0 as one composition update, retaining
   the wrapped isolation/startup gates as product-level qualification.
