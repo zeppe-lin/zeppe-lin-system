@@ -131,7 +131,7 @@ foundation closure and checks the final libgcc selection:
 linux-api-headers -> glibc
 linux-api-headers -> glibc-bootstrap -> libgcc
                                   glibc <-> libgcc   (run)
-filesystem + glibc(release 3, C.UTF-8) + libgcc      (@foundation)
+filesystem + glibc(release 4, C.UTF-8) + libgcc      (@foundation)
                                            `-> check libgcc
 ```
 

@@ -32,7 +32,7 @@ def main() -> None:
     foundation = bootstrap.load_foundation_descriptor(root)
     if foundation.name != 'foundation':
         fail('foundation descriptor does not load')
-    if bootstrap.EXPECTED_PACKAGE_COORDINATES.get('glibc') != ('2.44', '3'):
+    if bootstrap.EXPECTED_PACKAGE_COORDINATES.get('glibc') != ('2.44', '4'):
         fail('bootstrap model does not require the merged-/usr-sealed glibc release')
     if bootstrap.FOUNDATION_STAGE != 'seed-assisted-foundation-root-qualified':
         fail('bootstrap model misstates the current foundation stage')
