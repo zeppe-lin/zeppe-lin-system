@@ -60,8 +60,9 @@ On a new workspace it:
 6. initializes two empty native state authorities with the Meson-built
    `pkgstate-init`;
 7. admits and runs the checked `seed-probe` transaction;
-8. admits one mixed native transaction that converges exact `@foundation`
-   membership into the private `main/foundation-root` and checks the same target
+8. admits one mixed native transaction under the complete
+   `exact-compatible-sharing` target-operation policy, converges exact `@foundation`
+   membership into the private `main/foundation-root`, and checks the same target
    `libgcc` selection; and
 9. independently re-hashes the five retained construction artifacts, verifies the
    managed foundation root against selected artifact bytes, usable `C.UTF-8`,
@@ -90,8 +91,11 @@ controller paths:
 
 `--max-steps` is live per-invocation control. `--jobs`,
 `--source-date-epoch`, seed selection and collection source overrides are
-start-only authority. Resume/check recover them from the workspace and reject
-their re-declaration.
+start-only authority. The product-selected `exact-compatible-sharing` operation
+policy is retained in workspace authority and admitted only on the initial
+`pkgctl run --start`; resume relies on pkgctl's retained command authority and
+does not redeclare the policy. Resume/check reject caller re-declaration of
+start-only product authority.
 
 For offline seed acquisition, select the same committed descriptor but supply
 its exact bytes:

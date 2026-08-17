@@ -60,6 +60,7 @@ def main() -> None:
             'target_root': '/tmp/bootstrap-workspace/main/foundation-root',
         },
         'qualification': {'sha256': '1' * 64},
+        'operation_policy_profile': bootstrap.FOUNDATION_OPERATION_PROFILE,
         'build_policy': {
             'parallelism': 7,
             'source_date_epoch': 0,
@@ -72,6 +73,22 @@ def main() -> None:
     if bootstrap.nonce_for('foundation-root', marker) == main_nonce:
         fail('build policy does not contribute to bootstrap request identity')
     marker['build_policy']['parallelism'] = 7
+    main_nonce = bootstrap.nonce_for('foundation-root', marker)
+    main_identity = bootstrap.identity_for('managed-target', marker)
+    qualification_identity = bootstrap.identity_for('qualification-managed-target', marker)
+    admitted_profile = bootstrap.FOUNDATION_OPERATION_PROFILE
+    try:
+        bootstrap.FOUNDATION_OPERATION_PROFILE = 'strict-exclusive'
+        marker['operation_policy_profile'] = bootstrap.FOUNDATION_OPERATION_PROFILE
+        if bootstrap.nonce_for('foundation-root', marker) == main_nonce:
+            fail('operation-policy profile does not contribute to bootstrap request identity')
+        if bootstrap.identity_for('managed-target', marker) == main_identity:
+            fail('operation-policy profile does not contribute to managed target identity')
+        if bootstrap.identity_for('qualification-managed-target', marker) != qualification_identity:
+            fail('foundation operation-policy profile contaminates qualification target identity')
+    finally:
+        bootstrap.FOUNDATION_OPERATION_PROFILE = admitted_profile
+        marker['operation_policy_profile'] = admitted_profile
     marker.update({
         'workspace': '/tmp/bootstrap-workspace',
         'seed': {**marker['seed'], 'root': '/tmp/bootstrap-workspace/seed-root',
@@ -104,14 +121,19 @@ def main() -> None:
         fail(f'mixed run goals differ: {sorted(observed_goals)}')
     if any(goal.startswith('build=') for goal in observed_goals):
         fail('mixed run reintroduced a parallel explicit construction root')
-    for token in ('--prefer-catalog', '--converge-exact', '--lifecycle-root',
-                  '--target-root'):
+    for token in ('--prefer-catalog', '--converge-exact', '--operation-policy',
+                  '--lifecycle-root', '--target-root'):
         if token not in start_args:
             fail(f'mixed run omits required composition authority: {token}')
     if '--artifact-root' in start_args:
         fail('mixed run exposes construction artifacts as build-frontend authority')
     if '--artifact-root' not in qualification_args:
         fail('seed qualification lost its explicit public artifact root')
+    policy_index = start_args.index('--operation-policy')
+    if start_args[policy_index + 1] != bootstrap.FOUNDATION_OPERATION_PROFILE:
+        fail('mixed run does not select the admitted complete operation-policy profile')
+    if '--operation-policy' in qualification_args:
+        fail('build-only seed qualification was contaminated by target operation-policy profile')
     parallelism_index = start_args.index('--build-parallelism')
     if start_args[parallelism_index + 1] != '7':
         fail('mixed run did not preserve non-default admitted build parallelism')
@@ -122,7 +144,8 @@ def main() -> None:
     if start_args[lifecycle_index + 1] != '/tmp/bootstrap-workspace/seed-root':
         fail('seed-assisted lifecycle authority is not explicitly bounded to S0')
     for token in ('--collection', '--build-parallelism', '--build-source-date-epoch',
-                  '--goal', '--prefer-catalog', '--converge-exact', '--start'):
+                  '--goal', '--prefer-catalog', '--converge-exact',
+                  '--operation-policy', '--start'):
         if token not in start_args:
             fail(f'start command omits admitted semantic option: {token}')
         if token in resume_args:
@@ -144,6 +167,16 @@ def main() -> None:
     marker['qualification']['sha256'] = '2' * 64
     if bootstrap.identity_for('managed-target', marker) == old_identity:
         fail('qualification authority does not contribute to target binding')
+
+    marker['qualification']['sha256'] = '1' * 64
+    marker['operation_policy_profile'] = 'strict-exclusive'
+    try:
+        bootstrap._foundation_operation_profile(marker)
+    except bootstrap.BootstrapError:
+        pass
+    else:
+        fail('unsupported retained foundation operation-policy profile was accepted')
+    marker['operation_policy_profile'] = bootstrap.FOUNDATION_OPERATION_PROFILE
 
     report = '''\
 disposition step-limit-reached

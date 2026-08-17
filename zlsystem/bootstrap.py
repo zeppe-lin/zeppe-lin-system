@@ -28,6 +28,7 @@ COLLECTION_PROTOCOL = 'zeppe-lin.system.collection-source/1'
 DOMAIN = 'zeppe-lin/system/bootstrap/1'
 HOUSE_UMASK = '0022'
 OUTPUT_LAYOUT = 'package-root'
+FOUNDATION_OPERATION_PROFILE = 'exact-compatible-sharing'
 HEX40 = re.compile(r'^[0-9a-f]{40}$')
 HEX64 = re.compile(r'^[0-9a-f]{64}$')
 RUNTIME_DIRS = (
@@ -139,6 +140,20 @@ def material_digest(*fields: object) -> str:
     return hashlib.sha256(text.encode()).hexdigest()
 
 
+def _foundation_operation_profile(marker: Mapping[str, object]) -> str:
+    profile = marker.get('operation_policy_profile')
+    if profile != FOUNDATION_OPERATION_PROFILE:
+        raise BootstrapError(
+            'bootstrap workspace operation-policy profile differs from product authority')
+    return profile
+
+
+def _operation_policy_binding(domain: str, marker: Mapping[str, object]) -> str:
+    if domain == 'seed-probe' or domain.startswith('qualification-'):
+        return ''
+    return _foundation_operation_profile(marker)
+
+
 def identity_for(domain: str, marker: Mapping[str, object]) -> str:
     digest = material_digest(
         DOMAIN,
@@ -146,6 +161,7 @@ def identity_for(domain: str, marker: Mapping[str, object]) -> str:
         marker['seed']['sha256'],
         marker['foundation']['revision'],
         marker['qualification']['sha256'],
+        _operation_policy_binding(domain, marker),
     )
     return f'v1:sha256:{digest}'
 
@@ -162,6 +178,7 @@ def nonce_for(domain: str, marker: Mapping[str, object]) -> str:
         policy['source_date_epoch'],
         policy['file_creation_mask'],
         policy['output_layout'],
+        _operation_policy_binding(domain, marker),
     )
 
 
@@ -535,6 +552,7 @@ def load_marker(workspace: Path) -> dict[str, object]:
         raise BootstrapError(f'cannot read bootstrap workspace authority: {error}') from error
     if marker.get('format') != WORKSPACE_FORMAT:
         raise BootstrapError('bootstrap workspace format is incompatible')
+    _foundation_operation_profile(marker)
     return marker
 
 
@@ -719,6 +737,7 @@ def _start_pkgctl_args(
             '--goal', 'check=libgcc',
             '--prefer-catalog',
             '--converge-exact',
+            '--operation-policy', _foundation_operation_profile(marker),
         ]
     args += [
         '--start', nonce,
@@ -994,6 +1013,7 @@ def _initialize_attempt(context: BuildContext, options: BootstrapOptions) -> dic
             'group_id': gid,
             'groups': groups,
         },
+        'operation_policy_profile': FOUNDATION_OPERATION_PROFILE,
         'build_policy': {
             'parallelism': jobs,
             'source_date_epoch': epoch,
@@ -1137,6 +1157,7 @@ def check(context: BuildContext, options: BootstrapOptions) -> Path:
         f'build-policy-file-creation-mask {marker["build_policy"]["file_creation_mask"]}',
         f'build-policy-source-date-epoch {marker["build_policy"]["source_date_epoch"]}',
         f'build-policy-output-layout {marker["build_policy"]["output_layout"]}',
+        f'foundation-operation-policy-profile {_foundation_operation_profile(marker)}',
         f'foundation-stage {FOUNDATION_STAGE}',
         'foundation-profile @foundation',
         f'foundation-members {",".join(FOUNDATION_MEMBERS)}',

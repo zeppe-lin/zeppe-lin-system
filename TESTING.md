@@ -63,7 +63,10 @@ policy-sensitive request identity, qualification-sensitive target identity,
 controller report parsing, safe archive extraction, path traversal refusal and
 write-through-symlink refusal. It also requires the main stage to be one mixed
 `pkgctl run` transaction with exact `@foundation` convergence, attacks a non-default
-build parallelism value so the frontend cannot fall back to one job, rejects public
+build parallelism value so the frontend cannot fall back to one job, requires
+main start to select the complete `exact-compatible-sharing` operation policy,
+requires that policy to bind main request/target identity without contaminating
+seed-qualification identity, forbids policy redeclaration on resume, rejects public
 main-stage artifact authority, rejects an explicit build goal that would recreate
 the target substrate in a parallel build environment, and poisons a synthetic
 foundation root with compiler residue. Seed retirement remains explicitly unproven.
@@ -92,6 +95,7 @@ The current bootstrap manifest must say:
 
 ```text
 foundation-stage seed-assisted-foundation-root-qualified
+foundation-operation-policy-profile exact-compatible-sharing
 foundation-profile @foundation
 foundation-members filesystem,glibc,libgcc
 seed-retirement-qualified no

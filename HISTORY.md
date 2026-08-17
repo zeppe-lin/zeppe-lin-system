@@ -2,6 +2,10 @@
 
 ## 0.1.0 — unreleased
 
+- Advance the pinned terminal controller to `pkgctl` 0.40.0 and admit
+  `exact-compatible-sharing` as the complete foundation target-operation policy.
+  Retain that opaque controller profile as product authority, bind it into main
+  transaction/target identities, and never redeclare it on resume.
 - Compose the exact `@foundation` profile into a private managed foundation root in
   one native transaction, check the same target libgcc selection, preserve admitted
   build parallelism/epoch under `pkgctl run`, retain construction artifacts only as

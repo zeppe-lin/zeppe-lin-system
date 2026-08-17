@@ -136,9 +136,12 @@ filesystem + glibc(release 4, C.UTF-8) + libgcc      (@foundation)
 ```
 
 Dependency closure is resolved by the native package stack. The transaction
-selects `run=@foundation` with exact convergence into `main/foundation-root` and
-`check=libgcc` against the same target selection; it does not introduce a second
-explicit build/check root for the finished substrate. Construction-only graph
+selects `run=@foundation` with exact convergence into `main/foundation-root`,
+`check=libgcc` against the same target selection, and the complete pkgctl
+`exact-compatible-sharing` operation-policy profile. `zeppe-lin-system` owns only
+that product-level profile selection; planner policy fields and their codec remain
+outside this repository. The transaction does not introduce a second explicit
+build/check root for the finished substrate. Construction-only graph
 nodes are retained as artifacts/evidence but are not desired installed state. The
 system frontend does not order packages or hand-extract archives for application.
 
@@ -158,6 +161,7 @@ Therefore `bootstrap.manifest` records:
 
 ```text
 foundation-stage seed-assisted-foundation-root-qualified
+foundation-operation-policy-profile exact-compatible-sharing
 foundation-profile @foundation
 foundation-members filesystem,glibc,libgcc
 seed-retirement-qualified no
@@ -182,18 +186,24 @@ exact pkgctl path and SHA-256
 exact pkgstate-init path and SHA-256
 native supervisor credentials
 complete build policy
+opaque foundation operation-policy profile
 privilege command coordinate
 private seed-root coordinate
 ```
 
 Command nonces and state-target identities are domain-separated from those
-values. Build policy contributes to the start nonce. Replacing either controller
-binary in place, changing explicit build policy, changing privilege command, or
-substituting collection/qualification authority fails closed.
+values. Build policy contributes to the start nonce. The foundation operation
+policy contributes to main transaction nonces and target/state identities but
+does not contaminate the build-only seed-qualification identities. Replacing
+either controller binary in place, changing explicit build or operation policy,
+changing privilege command, or substituting collection/qualification authority
+fails closed.
 
 `pkgctl --resume` remains responsible for transaction restart semantics. The
 system frontend only recovers the already admitted physical/product coordinates
 and repeatedly resumes when the controller reports the explicit live step bound.
+It does not redeclare the foundation operation policy on resume; pkgctl must
+rehydrate the retained complete policy authority admitted at start.
 
 ## Bootstrap qualification
 

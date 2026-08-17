@@ -51,6 +51,19 @@ def main() -> None:
     if 'name: seed-probe' not in seed_probe:
         fail('seed-probe recipe identity differs')
 
+    product_sources = '\n'.join(
+        path.read_text(encoding='utf-8')
+        for path in sorted((root / 'zlsystem').glob('*.py')))
+    if product_sources.count("FOUNDATION_OPERATION_PROFILE = 'exact-compatible-sharing'") != 1:
+        fail('foundation operation profile is not one product-owned selection')
+    if "foundation-operation-policy-profile {_foundation_operation_profile(marker)}" not in product_sources:
+        fail('bootstrap manifest omits the retained foundation operation profile')
+    for foreign_vocabulary in (
+            'shared_ownership_policy', 'incoming_path_policy', 'obsolete_path_policy',
+            'directory_cleanup_policy', 'path_override_policy'):
+        if foreign_vocabulary in product_sources:
+            fail(f'product frontend copied planner policy vocabulary: {foreign_vocabulary}')
+
 
 if __name__ == '__main__':
     main()

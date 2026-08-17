@@ -65,8 +65,11 @@ architecture work, incompatible old private bytes should fail closed rather than
 acquiring compatibility decoders or reconstructing missing authority.
 
 A resumed workspace must recover its admitted seed, collection snapshot, build
-policy and controller identities. Start-only policy is never redeclared by the
-frontend on `pkgctl --resume`; `--max-steps` remains live invocation control.
+policy, foundation operation-policy profile and controller identities. The
+product owns only the opaque complete pkgctl profile selection; it must not copy
+or decode libpkgplan policy vocabulary. Start-only authority is never redeclared
+by the frontend on `pkgctl --resume`; `--max-steps` remains live invocation
+control.
 
 ## Scope discipline
 

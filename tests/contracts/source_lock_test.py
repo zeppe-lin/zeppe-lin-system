@@ -20,6 +20,7 @@ EXPECTED = {
     'libpkgtransaction', 'pkgctl',
 }
 HEX40 = re.compile(r'^[0-9a-f]{40}$')
+EXPECTED_PKGCTL_REVISION = 'f922ce0bf6317a1b700f68351e652f72a1fa854c'
 
 
 def fail(message: str) -> None:
@@ -65,6 +66,10 @@ def main() -> None:
         for forbidden in ('depth', 'push-url'):
             if forbidden in section:
                 fail(f'{name}: {forbidden} is forbidden in canonical source lock')
+
+    pkgctl = load_wrap(wraps['pkgctl'])
+    if pkgctl['wrap-git'].get('revision') != EXPECTED_PKGCTL_REVISION:
+        fail('pkgctl is not pinned to the admitted 0.40.0 release authority')
 
     catalog = load_wrap(wraps['libpkgcatalog'])
     if catalog.get('provide', 'dependency_names', fallback='') != \
