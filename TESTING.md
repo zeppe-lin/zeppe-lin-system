@@ -97,6 +97,10 @@ foundation-members filesystem,glibc,libgcc
 seed-retirement-qualified no
 ```
 
+Bootstrap qualification also requires final glibc to retain
+`usr/share/locale/locale.alias` exactly alongside the sealed `C.UTF-8` locale
+archive, while translated message catalogs remain absent by collection policy.
+
 This is intentional negative evidence. A correctly converged `@foundation` root while
 the S0 seed remains reachable is still not proof that higher construction has ceased
 to depend on that seed. The future seed-retirement test must make S0 inaccessible

@@ -205,8 +205,10 @@ bootstrap product. `zlsystem bootstrap check` independently:
 - requires exactly the five expected retained construction artifacts;
 - re-hashes every private run archive against retained controller evidence;
 - checks critical package members;
-- verifies final glibc package coordinates and usable `C.UTF-8` locale authority;
-- rejects a public main-stage artifact root, verifies selected libc/locale/libgcc bytes
+- verifies final glibc package coordinates, usable `C.UTF-8` locale authority, and
+  retained `locale.alias`;
+- rejects a public main-stage artifact root, verifies selected
+  libc/locale/locale-alias/libgcc bytes
   in the managed foundation root, and rejects obvious seed/build-only residue;
 - verifies final libgcc SONAME/dependencies and absence of RPATH/RUNPATH;
 - realizes filesystem/glibc/libgcc package trees from retained archives without

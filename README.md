@@ -64,8 +64,9 @@ On a new workspace it:
    membership into the private `main/foundation-root` and checks the same target
    `libgcc` selection; and
 9. independently re-hashes the five retained construction artifacts, verifies the
-   managed foundation root against selected artifact bytes, usable `C.UTF-8`
-   authority and managed libc/libgcc loadability, then emits `bootstrap.manifest`.
+   managed foundation root against selected artifact bytes, usable `C.UTF-8`,
+   retained `locale.alias`, and managed libc/libgcc loadability, then emits
+   `bootstrap.manifest`.
 
 
 The current bootstrap is deliberately **seed-assisted**. It now composes the stable

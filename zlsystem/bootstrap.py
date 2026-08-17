@@ -58,7 +58,7 @@ FOUNDATION_STAGE = 'seed-assisted-foundation-root-qualified'
 SEED_RETIREMENT_QUALIFIED = False
 EXPECTED_PACKAGE_COORDINATES = {
     'filesystem': ('1.0.0', '1'),
-    'glibc': ('2.44', '4'),
+    'glibc': ('2.44', '5'),
     'glibc-bootstrap': ('2.44', '1'),
     'libgcc': ('16.1.0', '1'),
     'linux-api-headers': ('7.1.8', '1'),
@@ -1184,7 +1184,7 @@ def check(context: BuildContext, options: BootstrapOptions) -> Path:
             'usr/include/gnu/stubs.h', 'usr/lib/crt1.o', 'usr/lib/crti.o',
             'usr/lib/crtn.o', 'usr/lib/libc.so.6', 'usr/lib/libc_nonshared.a',
             'usr/lib/ld-linux-x86-64.so.2', 'usr/bin/localedef',
-            'usr/lib/locale/locale-archive',
+            'usr/lib/locale/locale-archive', 'usr/share/locale/locale.alias',
         ),
         'linux-api-headers': ('usr/include/linux/types.h',),
         'glibc-bootstrap': (
@@ -1220,6 +1220,8 @@ def check(context: BuildContext, options: BootstrapOptions) -> Path:
                 ('usr/lib/libc.so.6', root / 'glibc' / 'usr/lib/libc.so.6'),
                 ('usr/lib/locale/locale-archive',
                  root / 'glibc' / 'usr/lib/locale/locale-archive'),
+                ('usr/share/locale/locale.alias',
+                 root / 'glibc' / 'usr/share/locale/locale.alias'),
                 ('usr/lib/libgcc_s.so.1', root / 'libgcc' / 'usr/lib/libgcc_s.so.1')):
             target = foundation_root / relative
             if not target.is_file() or sha256_file(target) != sha256_file(source):
