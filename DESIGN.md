@@ -205,6 +205,14 @@ and repeatedly resumes when the controller reports the explicit live step bound.
 It does not redeclare the foundation operation policy on resume; pkgctl must
 rehydrate the retained complete policy authority admitted at start.
 
+`bootstrap clean` is deliberately outside that semantic admission path. Cleanup
+proves only that the current marker format is bound to the exact workspace path
+and then destroys the workspace. It does not decode or reconstruct obsolete
+product policy, controller or transaction authority. Therefore incompatible
+private evidence remains unusable for resume/check while still being removable
+without a compatibility decoder. A cleanup `--privilege` value is live deletion
+authority, not historical supervisor authority.
+
 ## Bootstrap qualification
 
 A terminal controller report is necessary but not sufficient to accept the

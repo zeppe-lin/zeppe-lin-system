@@ -95,7 +95,10 @@ start-only authority. The product-selected `exact-compatible-sharing` operation
 policy is retained in workspace authority and admitted only on the initial
 `pkgctl run --start`; resume relies on pkgctl's retained command authority and
 does not redeclare the policy. Resume/check reject caller re-declaration of
-start-only product authority.
+start-only product authority. Cleanup is different: it validates only that the
+workspace marker is in the current private format and binds the exact workspace
+path, so an obsolete pre-policy workspace can be deliberately destroyed even
+though it cannot be resumed or checked.
 
 For offline seed acquisition, select the same committed descriptor but supply
 its exact bytes:

@@ -2,6 +2,10 @@
 
 ## 0.1.0 — unreleased
 
+- Separate destructive bootstrap cleanup admission from resumable workspace
+  authority: obsolete marker-bound private workspaces may be removed without
+  reconstructing missing product policy, while resume/check continue to fail
+  closed on incompatible authority.
 - Advance the pinned terminal controller to `pkgctl` 0.40.0 and admit
   `exact-compatible-sharing` as the complete foundation target-operation policy.
   Retain that opaque controller profile as product authority, bind it into main

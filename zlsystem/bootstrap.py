@@ -542,7 +542,7 @@ def atomic_json(path: Path, value: Mapping[str, object]) -> None:
     temporary.replace(path)
 
 
-def load_marker(workspace: Path) -> dict[str, object]:
+def _read_workspace_marker(workspace: Path) -> dict[str, object]:
     path = marker_path(workspace)
     if not path.is_file():
         raise BootstrapError(f'bootstrap workspace is not initialized: {workspace}')
@@ -550,10 +550,23 @@ def load_marker(workspace: Path) -> dict[str, object]:
         marker = json.loads(path.read_text(encoding='utf-8'))
     except (OSError, json.JSONDecodeError) as error:
         raise BootstrapError(f'cannot read bootstrap workspace authority: {error}') from error
+    if not isinstance(marker, dict):
+        raise BootstrapError('bootstrap workspace authority is not an object')
     if marker.get('format') != WORKSPACE_FORMAT:
         raise BootstrapError('bootstrap workspace format is incompatible')
+    return marker
+
+
+def load_marker(workspace: Path) -> dict[str, object]:
+    marker = _read_workspace_marker(workspace)
     _foundation_operation_profile(marker)
     return marker
+
+
+def _validate_cleanup_marker(workspace: Path) -> None:
+    marker = _read_workspace_marker(workspace)
+    if marker.get('workspace') != str(workspace):
+        raise BootstrapError('bootstrap workspace marker does not bind cleanup target')
 
 
 def report_fields(text: str) -> dict[str, list[str]]:
@@ -1311,9 +1324,9 @@ def clean(context: BuildContext, options: BootstrapOptions) -> None:
         return
     if not marker_path(workspace).is_file():
         raise BootstrapError(f'refusing to remove unmarked bootstrap workspace: {workspace}')
-    marker = load_marker(workspace)
+    _validate_cleanup_marker(workspace)
     _reject_start_redeclaration(options)
-    privilege = _requested_privilege(options, marker)
+    privilege = None if options.privilege is None else resolve_program(options.privilege)
     try:
         shutil.rmtree(workspace)
     except OSError:

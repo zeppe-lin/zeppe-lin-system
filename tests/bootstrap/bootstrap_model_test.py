@@ -397,6 +397,35 @@ artifact.0.sha256 abc
         if not (unmarked_workspace / 'foreign').is_file():
             fail('bootstrap clean mutated an unmarked workspace')
 
+        stale_workspace = temp / 'stale-bootstrap'
+        stale_workspace.mkdir()
+        (stale_workspace / 'obsolete').write_text('remove\n', encoding='utf-8')
+        bootstrap.atomic_json(bootstrap.marker_path(stale_workspace), {
+            'format': bootstrap.WORKSPACE_FORMAT,
+            'workspace': str(stale_workspace),
+        })
+        bootstrap.clean(
+            context, bootstrap.BootstrapOptions(workspace=stale_workspace))
+        if stale_workspace.exists():
+            fail('bootstrap clean retained a marker-bound pre-policy workspace')
+
+        misbound_workspace = temp / 'misbound-bootstrap'
+        misbound_workspace.mkdir()
+        (misbound_workspace / 'foreign').write_text('keep\n', encoding='utf-8')
+        bootstrap.atomic_json(bootstrap.marker_path(misbound_workspace), {
+            'format': bootstrap.WORKSPACE_FORMAT,
+            'workspace': str(temp / 'different-bootstrap'),
+        })
+        try:
+            bootstrap.clean(
+                context, bootstrap.BootstrapOptions(workspace=misbound_workspace))
+        except bootstrap.BootstrapError:
+            pass
+        else:
+            fail('bootstrap clean removed a workspace with a copied/misbound marker')
+        if not (misbound_workspace / 'foreign').is_file():
+            fail('bootstrap clean mutated a workspace with a misbound marker')
+
 
 if __name__ == '__main__':
     main()

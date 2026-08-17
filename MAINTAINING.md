@@ -63,6 +63,11 @@ project defines the signing-key trust authority used for verification.
 Bootstrap workspace JSON is private product evidence. During pre-release
 architecture work, incompatible old private bytes should fail closed rather than
 acquiring compatibility decoders or reconstructing missing authority.
+This fail-closed rule governs semantic admission (`run`, `resume`, and `check`),
+not destruction. `bootstrap clean` may remove a marker-bound workspace without
+decoding stale product semantics; the marker format and exact workspace binding
+are sufficient deletion authority. Do not add a compatibility decoder merely so
+old workspaces can be cleaned.
 
 A resumed workspace must recover its admitted seed, collection snapshot, build
 policy, foundation operation-policy profile and controller identities. The

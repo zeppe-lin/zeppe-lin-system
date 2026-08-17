@@ -69,7 +69,9 @@ requires that policy to bind main request/target identity without contaminating
 seed-qualification identity, forbids policy redeclaration on resume, rejects public
 main-stage artifact authority, rejects an explicit build goal that would recreate
 the target substrate in a parallel build environment, and poisons a synthetic
-foundation root with compiler residue. Seed retirement remains explicitly unproven.
+foundation root with compiler residue. It also proves cleanup refuses unmarked or
+misbound workspaces while allowing a marker-bound pre-policy workspace to be
+destroyed without semantic admission. Seed retirement remains explicitly unproven.
 
 The real product qualification is intentionally separate from this suite:
 
