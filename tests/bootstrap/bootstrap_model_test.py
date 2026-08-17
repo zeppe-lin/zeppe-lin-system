@@ -32,12 +32,16 @@ def main() -> None:
     foundation = bootstrap.load_foundation_descriptor(root)
     if foundation.name != 'foundation':
         fail('foundation descriptor does not load')
-    if bootstrap.EXPECTED_PACKAGE_COORDINATES.get('glibc') != ('2.44', '2'):
-        fail('bootstrap model does not require the C.UTF-8-bearing glibc release')
+    if bootstrap.EXPECTED_PACKAGE_COORDINATES.get('glibc') != ('2.44', '3'):
+        fail('bootstrap model does not require the merged-/usr-sealed glibc release')
     if bootstrap.FOUNDATION_STAGE != 'seed-assisted-foundation-root-qualified':
         fail('bootstrap model misstates the current foundation stage')
     if bootstrap.FOUNDATION_MEMBERS != ('filesystem', 'glibc', 'libgcc'):
         fail('bootstrap model foundation membership differs from @foundation authority')
+    if bootstrap.EXPECTED_ARTIFACTS != (
+            'filesystem', 'glibc', 'glibc-bootstrap', 'libgcc',
+            'linux-api-headers'):
+        fail('bootstrap model retains a duplicate/probe construction closure')
     if bootstrap.SEED_RETIREMENT_QUALIFIED:
         fail('bootstrap model claims seed retirement before the hostile gate exists')
     for required_runtime in (
@@ -63,9 +67,9 @@ def main() -> None:
             'output_layout': 'package-root',
         },
     }
-    main_nonce = bootstrap.nonce_for('runtime-cohort-probe', marker)
+    main_nonce = bootstrap.nonce_for('foundation-root', marker)
     marker['build_policy']['parallelism'] = 11
-    if bootstrap.nonce_for('runtime-cohort-probe', marker) == main_nonce:
+    if bootstrap.nonce_for('foundation-root', marker) == main_nonce:
         fail('build policy does not contribute to bootstrap request identity')
     marker['build_policy']['parallelism'] = 7
     marker.update({
@@ -90,8 +94,7 @@ def main() -> None:
     if qualification_args[1] != 'build':
         fail('seed qualification lost the restricted build frontend')
     expected_goals = {
-        'build=runtime-cohort-probe', 'check=runtime-cohort-probe',
-        'run=@foundation',
+        'run=@foundation', 'check=libgcc',
     }
     observed_goals = {
         start_args[index + 1]
@@ -99,6 +102,8 @@ def main() -> None:
     }
     if observed_goals != expected_goals:
         fail(f'mixed run goals differ: {sorted(observed_goals)}')
+    if any(goal.startswith('build=') for goal in observed_goals):
+        fail('mixed run reintroduced a parallel explicit construction root')
     for token in ('--prefer-catalog', '--converge-exact', '--lifecycle-root',
                   '--target-root'):
         if token not in start_args:
@@ -275,6 +280,69 @@ artifact.0.sha256 abc
         (foundation_root / 'lib64').symlink_to('usr/lib64')
         (foundation_root / 'usr/lib64').symlink_to('lib')
         bootstrap._validate_foundation_root_scope(foundation_root)
+
+        loader = foundation_root / 'usr/lib/ld-linux-x86-64.so.2'
+        localedef = foundation_root / 'usr/bin/localedef'
+        libgcc = foundation_root / 'usr/lib/libgcc_s.so.1'
+        libc = foundation_root / 'usr/lib/libc.so.6'
+        for path in (loader, localedef, libgcc, libc):
+            path.write_bytes(b'model\n')
+
+        commands: list[list[str]] = []
+        original_run_command = bootstrap.run_command
+
+        def managed_runtime_command(args, **kwargs):
+            command = [str(value) for value in args]
+            commands.append(command)
+            if '--list-archive' in command:
+                return bootstrap.CommandResult(0, 'C.utf8\n', '')
+            if '--list' in command:
+                return bootstrap.CommandResult(
+                    0,
+                    f'libc.so.6 => {libc} (0x1)\n{loader} (0x2)\n',
+                    '')
+            if '--dyn-syms' in command:
+                return bootstrap.CommandResult(0, '_Unwind_Backtrace\n', '')
+            fail(f'unexpected managed-runtime command: {command}')
+
+        bootstrap.run_command = managed_runtime_command
+        try:
+            bootstrap._validate_foundation_runtime(context, foundation_root)
+        finally:
+            bootstrap.run_command = original_run_command
+        list_commands = [command for command in commands if '--list' in command]
+        if len(list_commands) != 1:
+            fail('managed runtime qualification did not issue exactly one loader list')
+        if '--inhibit-cache' not in list_commands[0]:
+            fail('managed runtime qualification permits host loader cache authority')
+        library_index = list_commands[0].index('--library-path')
+        if list_commands[0][library_index + 1] != str(foundation_root / 'usr/lib'):
+            fail('managed runtime qualification uses non-foundation library search authority')
+
+        def hostile_runtime_command(args, **kwargs):
+            command = [str(value) for value in args]
+            if '--list-archive' in command:
+                return bootstrap.CommandResult(0, 'C.utf8\n', '')
+            if '--list' in command:
+                return bootstrap.CommandResult(
+                    0,
+                    f'libc.so.6 => /usr/lib/libc.so.6 (0x1)\n{loader} (0x2)\n',
+                    '')
+            if '--dyn-syms' in command:
+                return bootstrap.CommandResult(0, '_Unwind_Backtrace\n', '')
+            fail(f'unexpected hostile managed-runtime command: {command}')
+
+        bootstrap.run_command = hostile_runtime_command
+        try:
+            try:
+                bootstrap._validate_foundation_runtime(context, foundation_root)
+            except bootstrap.BootstrapError:
+                pass
+            else:
+                fail('managed runtime qualification admitted host libc resolution')
+        finally:
+            bootstrap.run_command = original_run_command
+
         (foundation_root / 'usr/bin/gcc').write_text('poison\n', encoding='utf-8')
         try:
             bootstrap._validate_foundation_root_scope(foundation_root)

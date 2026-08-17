@@ -51,18 +51,17 @@ SEED_ROOT_DIRS = (
 )
 EXPECTED_ARTIFACTS = (
     'filesystem', 'glibc', 'glibc-bootstrap', 'libgcc',
-    'linux-api-headers', 'runtime-cohort-probe',
+    'linux-api-headers',
 )
 FOUNDATION_MEMBERS = ('filesystem', 'glibc', 'libgcc')
 FOUNDATION_STAGE = 'seed-assisted-foundation-root-qualified'
 SEED_RETIREMENT_QUALIFIED = False
 EXPECTED_PACKAGE_COORDINATES = {
     'filesystem': ('1.0.0', '1'),
-    'glibc': ('2.44', '2'),
+    'glibc': ('2.44', '3'),
     'glibc-bootstrap': ('2.44', '1'),
     'libgcc': ('16.1.0', '1'),
     'linux-api-headers': ('7.1.8', '1'),
-    'runtime-cohort-probe': ('1.0', '1'),
 }
 
 
@@ -648,6 +647,39 @@ def _validate_foundation_root_scope(root: Path) -> None:
                 f'foundation managed root contains non-profile/seed residue: {relative}')
 
 
+def _validate_foundation_runtime(context: BuildContext, root: Path) -> None:
+    loader = root / 'usr/lib/ld-linux-x86-64.so.2'
+    localedef = root / 'usr/bin/localedef'
+    libgcc = root / 'usr/lib/libgcc_s.so.1'
+    libc = root / 'usr/lib/libc.so.6'
+
+    locale_listing = run_command([
+        loader, '--inhibit-cache', '--library-path', root / 'usr/lib',
+        localedef, f'--prefix={root}', '--list-archive',
+    ], check=True).stdout.splitlines()
+    if 'C.utf8' not in locale_listing:
+        raise BootstrapError(
+            'foundation managed root lacks usable C.UTF-8 locale authority')
+
+    loaded = run_command([
+        loader, '--inhibit-cache', '--library-path', root / 'usr/lib',
+        '--list', libgcc,
+    ], check=True).stdout
+    if f'libc.so.6 => {libc}' not in loaded:
+        raise BootstrapError(
+            'foundation loader did not resolve libgcc against managed libc')
+    if str(loader) not in loaded:
+        raise BootstrapError(
+            'foundation loader did not retain its managed interpreter path')
+
+    symbols = run_command([
+        context.readelf, '--dyn-syms', '--wide', libgcc,
+    ], check=True).stdout
+    if '_Unwind_Backtrace' not in symbols:
+        raise BootstrapError(
+            'foundation libgcc lacks the unwind entry point used by native consumers')
+
+
 def _start_pkgctl_args(
     context: BuildContext,
     marker: Mapping[str, object],
@@ -671,7 +703,7 @@ def _start_pkgctl_args(
             '--collection', f'foundation={workspace / "collections" / "foundation"}',
             '--collection', f'bootstrap-qualification={workspace / "qualification" / "collection"}',
         ]
-        nonce = nonce_for('runtime-cohort-probe', marker)
+        nonce = nonce_for('foundation-root', marker)
         args = [
             context.pkgctl, 'run',
             '--canonical-store', base / 'state',
@@ -683,9 +715,8 @@ def _start_pkgctl_args(
     ]
     if not qualification:
         args += [
-            '--goal', 'build=runtime-cohort-probe',
-            '--goal', 'check=runtime-cohort-probe',
             '--goal', 'run=@foundation',
+            '--goal', 'check=libgcc',
             '--prefer-catalog',
             '--converge-exact',
         ]
@@ -720,7 +751,7 @@ def _resume_pkgctl_args(
     maximum_steps: int,
 ) -> list[str]:
     base, root, interpreter = _controller_args(marker, qualification=qualification)
-    nonce = nonce_for('seed-probe' if qualification else 'runtime-cohort-probe', marker)
+    nonce = nonce_for('seed-probe' if qualification else 'foundation-root', marker)
     args = [
         context.pkgctl, 'build' if qualification else 'run',
         '--canonical-store', base / 'state',
@@ -1161,7 +1192,6 @@ def check(context: BuildContext, options: BootstrapOptions) -> Path:
             'usr/lib/ld-linux-x86-64.so.2',
         ),
         'libgcc': ('usr/lib/libgcc_s.so.1',),
-        'runtime-cohort-probe': ('usr/libexec/runtime-cohort-probe', 'runtime-cohort.ok'),
     }
     paths = {name: Path(record['path']) for name, record in artifacts.items()}
     for package, members in required_members.items():
@@ -1171,12 +1201,11 @@ def check(context: BuildContext, options: BootstrapOptions) -> Path:
 
     with tempfile.TemporaryDirectory(prefix='zeppe-lin-bootstrap-check-') as temporary:
         root = Path(temporary)
-        for name in ('filesystem', 'glibc', 'libgcc', 'probe'):
+        for name in ('filesystem', 'glibc', 'libgcc'):
             (root / name).mkdir()
         _extract_archive_bytes(paths['filesystem'].read_bytes(), root / 'filesystem')
         _extract_archive_bytes(paths['glibc'].read_bytes(), root / 'glibc')
         _extract_archive_bytes(paths['libgcc'].read_bytes(), root / 'libgcc')
-        _extract_archive_bytes(paths['runtime-cohort-probe'].read_bytes(), root / 'probe')
 
         if os.readlink(root / 'filesystem' / 'lib64') != 'usr/lib64':
             raise BootstrapError('filesystem artifact /lib64 topology differs')
@@ -1197,17 +1226,6 @@ def check(context: BuildContext, options: BootstrapOptions) -> Path:
                 raise BootstrapError(
                     f'foundation managed root differs from selected artifact bytes: {relative}')
 
-        installed_loader = foundation_root / 'usr/lib/ld-linux-x86-64.so.2'
-        installed_localedef = foundation_root / 'usr/bin/localedef'
-        installed_locale_listing = run_command([
-            installed_loader, '--inhibit-cache', '--library-path',
-            foundation_root / 'usr/lib', installed_localedef,
-            f'--prefix={foundation_root}', '--list-archive',
-        ], check=True).stdout.splitlines()
-        if 'C.utf8' not in installed_locale_listing:
-            raise BootstrapError(
-                'foundation managed root lacks usable C.UTF-8 locale authority')
-
         libgcc = root / 'libgcc' / 'usr/lib/libgcc_s.so.1'
         libgcc_dynamic = run_command([context.readelf, '-d', libgcc], check=True).stdout
         if 'Library soname: [libgcc_s.so.1]' not in libgcc_dynamic:
@@ -1219,32 +1237,7 @@ def check(context: BuildContext, options: BootstrapOptions) -> Path:
         if '(RPATH)' in libgcc_dynamic or '(RUNPATH)' in libgcc_dynamic:
             raise BootstrapError('libgcc artifact carries RPATH/RUNPATH')
 
-        probe = root / 'probe' / 'usr/libexec/runtime-cohort-probe'
-        dynamic = run_command([context.readelf, '-d', probe], check=True).stdout
-        needed = re.findall(r'Shared library: \[([^]]+)\]', dynamic)
-        if sorted(needed) != ['libc.so.6', 'libgcc_s.so.1']:
-            raise BootstrapError(f'published probe NEEDED set differs: {needed}')
-        if 'Flags:' not in dynamic or 'NODEFLIB' not in dynamic:
-            raise BootstrapError('published probe permits default runtime library search')
-        if '(RPATH)' in dynamic or '(RUNPATH)' in dynamic:
-            raise BootstrapError('published runtime-cohort probe carries RPATH/RUNPATH')
-        program_headers = run_command([context.readelf, '-l', probe], check=True).stdout
-        if 'Requesting program interpreter: /lib64/ld-linux-x86-64.so.2' not in program_headers:
-            raise BootstrapError('published runtime-cohort probe names the wrong interpreter ABI')
-        loader = root / 'glibc' / 'usr/lib/ld-linux-x86-64.so.2'
-        library_path = f'{root / "glibc" / "usr/lib"}:{root / "libgcc" / "usr/lib"}'
-        localedef = root / 'glibc' / 'usr/bin/localedef'
-        locale_listing = run_command([
-            loader, '--inhibit-cache', '--library-path', library_path, localedef,
-            f'--prefix={root / "glibc"}', '--list-archive',
-        ], check=True).stdout.splitlines()
-        if 'C.utf8' not in locale_listing:
-            raise BootstrapError('published glibc artifact lacks usable C.UTF-8 locale authority')
-        execution = run_command([
-            loader, '--inhibit-cache', '--library-path', library_path, probe,
-        ], check=True)
-        if execution.stdout.strip() != 'runtime-cohort-ok':
-            raise BootstrapError('published final runtime cohort output differs')
+        _validate_foundation_runtime(context, foundation_root)
 
     temporary = manifest.with_name(manifest.name + '.tmp')
     temporary.write_text('\n'.join(lines) + '\n', encoding='utf-8')
@@ -1262,7 +1255,7 @@ def run(context: BuildContext, options: BootstrapOptions) -> Path:
     _run_until_terminal(
         context, marker, qualification=True,
         maximum_steps=options.maximum_steps, privilege=privilege)
-    print('bootstrap: constructing/checking cohort and converging @foundation')
+    print('bootstrap: constructing/checking and converging @foundation')
     _run_until_terminal(
         context, marker, qualification=False,
         maximum_steps=options.maximum_steps, privilege=privilege)

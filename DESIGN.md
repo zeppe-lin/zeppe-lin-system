@@ -92,9 +92,9 @@ signing-key trust boundary first.
 
 ## Bootstrap product
 
-The current bootstrap product intentionally reproduces the proven bounded
-runtime-cohort campaign before broadening scope. It now consumes the first
-seed-retirement-oriented `pkgsrc-foundation` revision, but this stage remains
+The current bootstrap product composes the first managed `@foundation` root
+without broadening into native toolchain construction. It consumes the
+seed-retirement-oriented `pkgsrc-foundation` boundary, but this stage remains
 explicitly seed-assisted: the historical seed still supplies construction tools.
 
 It has two package catalogs:
@@ -117,7 +117,6 @@ and currently contains:
 
 ```text
 seed-probe
-runtime-cohort-probe
 ```
 
 These recipes are not part of `@foundation`, `@rootfs`, or any distribution
@@ -125,20 +124,23 @@ package set. They exist because the bootstrap product requires their successful
 execution before it accepts the result.
 
 The first transaction checks the historical seed execution closure. The second is
-one mixed native `pkgctl run` transaction. It constructs/checks:
+one mixed native `pkgctl run` transaction. It constructs the exact target
+foundation closure and checks the final libgcc selection:
 
 ```text
-linux-api-headers -> glibc-bootstrap -> libgcc
 linux-api-headers -> glibc
-                    glibc <-> libgcc   (run)
-filesystem + glibc(release 2, C.UTF-8) + libgcc -> runtime-cohort-probe
+linux-api-headers -> glibc-bootstrap -> libgcc
+                                  glibc <-> libgcc   (run)
+filesystem + glibc(release 3, C.UTF-8) + libgcc      (@foundation)
+                                           `-> check libgcc
 ```
 
-Dependency closure and runtime-cohort semantics are resolved by the native
-package stack. The same transaction also selects `run=@foundation` with exact
-convergence into `main/foundation-root`; construction-only graph nodes are retained
-as artifacts/evidence but are not desired installed state. The system frontend does
-not order packages or hand-extract archives itself.
+Dependency closure is resolved by the native package stack. The transaction
+selects `run=@foundation` with exact convergence into `main/foundation-root` and
+`check=libgcc` against the same target selection; it does not introduce a second
+explicit build/check root for the finished substrate. Construction-only graph
+nodes are retained as artifacts/evidence but are not desired installed state. The
+system frontend does not order packages or hand-extract archives for application.
 
 
 ### Foundation stage and seed retirement
@@ -200,18 +202,18 @@ bootstrap product. `zlsystem bootstrap check` independently:
 
 - requires successfully terminal seed qualification and mixed foundation transactions;
 - verifies the seed-probe artifact retained by qualification;
-- requires exactly the six expected retained construction artifacts;
+- requires exactly the five expected retained construction artifacts;
 - re-hashes every private run archive against retained controller evidence;
 - checks critical package members;
 - verifies final glibc package coordinates and usable `C.UTF-8` locale authority;
 - rejects a public main-stage artifact root, verifies selected libc/locale/libgcc bytes
   in the managed foundation root, and rejects obvious seed/build-only residue;
 - verifies final libgcc SONAME/dependencies and absence of RPATH/RUNPATH;
-- realizes filesystem/glibc/libgcc/probe package trees from the published
-  archives without treating realization residue as evidence;
-- rechecks the probe NEEDED set, NODEFLIB and PT_INTERP contract; and
-- executes the sealed probe through the published glibc loader with only the
-  published glibc/libgcc library paths.
+- realizes filesystem/glibc/libgcc package trees from retained archives without
+  treating realization residue as evidence;
+- verifies libgcc's final dynamic ABI and unwind entry point; and
+- drives the installed foundation loader in `--list` mode against installed
+  `libgcc_s.so.1`, requiring libc resolution to stay inside the managed root.
 
 Success emits `zeppe-lin.system.bootstrap-manifest/1`.
 

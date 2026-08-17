@@ -6,7 +6,7 @@ import re
 import sys
 from pathlib import Path
 
-EXPECTED_REVISION = '70a4eceb6513022406f7a24d7380146956eff5b6'
+EXPECTED_REVISION = '7168ff45ee23daebfa9d115c891b4e901c52003d'
 
 
 def fail(message: str) -> None:
@@ -41,26 +41,15 @@ def main() -> None:
     qualification = root / 'products' / 'bootstrap' / 'qualification' / 'collection'
     recipes = sorted(path.relative_to(qualification).as_posix()
                      for path in qualification.glob('*/recipe.yml'))
-    if recipes != ['runtime-cohort-probe/recipe.yml', 'seed-probe/recipe.yml']:
+    if recipes != ['seed-probe/recipe.yml']:
         fail(f'bootstrap qualification collection differs: {recipes}')
     if (root / 'products' / 'bootstrap' / 'collection').exists():
         fail('qualification recipes are presented as ordinary bootstrap product inputs')
 
-    for name in ('seed-probe', 'runtime-cohort-probe'):
-        text = (qualification / name / 'recipe.yml').read_text(encoding='utf-8')
-        if f'name: {name}' not in text:
-            fail(f'{name} recipe identity differs')
-
-    runtime_probe = (qualification / 'runtime-cohort-probe' / 'recipe.yml').read_text(
+    seed_probe = (qualification / 'seed-probe' / 'recipe.yml').read_text(
         encoding='utf-8')
-    for phrase in (
-            'glibc locale archive is absent',
-            'sealed glibc artifact lacks C.UTF-8 locale authority',
-            'realized glibc loader is absent'):
-        if phrase not in runtime_probe:
-            fail(f'runtime-cohort qualification omits foundation contract: {phrase}')
-    if 'reconstructed glibc loader' in runtime_probe:
-        fail('runtime-cohort qualification reverted to truth-reconstruction vocabulary')
+    if 'name: seed-probe' not in seed_probe:
+        fail('seed-probe recipe identity differs')
 
 
 if __name__ == '__main__':

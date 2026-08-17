@@ -60,12 +60,12 @@ On a new workspace it:
 6. initializes two empty native state authorities with the Meson-built
    `pkgstate-init`;
 7. admits and runs the checked `seed-probe` transaction;
-8. admits one mixed native transaction that constructs/checks
-   `runtime-cohort-probe` while converging exact `@foundation` membership into the
-   private `main/foundation-root`; and
-9. independently re-hashes the six retained construction artifacts, verifies the
-   managed foundation root against selected artifact bytes and usable `C.UTF-8`
-   authority, and then emits `bootstrap.manifest`.
+8. admits one mixed native transaction that converges exact `@foundation`
+   membership into the private `main/foundation-root` and checks the same target
+   `libgcc` selection; and
+9. independently re-hashes the five retained construction artifacts, verifies the
+   managed foundation root against selected artifact bytes, usable `C.UTF-8`
+   authority and managed libc/libgcc loadability, then emits `bootstrap.manifest`.
 
 
 The current bootstrap is deliberately **seed-assisted**. It now composes the stable
@@ -118,8 +118,10 @@ Real product qualification assets live under:
 products/bootstrap/qualification/collection/
 ```
 
-`seed-probe` and `runtime-cohort-probe` are executed by real bootstrap products
-but are never distribution package membership.
+`seed-probe` is executed by the real bootstrap product but is never distribution
+package membership. Foundation runtime qualification is performed against the
+managed `@foundation` result itself rather than by manufacturing a parallel probe
+closure.
 
 Development tests live separately under `tests/` and are grouped by product:
 

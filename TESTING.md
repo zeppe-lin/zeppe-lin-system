@@ -49,11 +49,11 @@ described above.
 SHA-256 archive/signature identities and an explicit default.
 
 `bootstrap-source-authority` requires the exact `pkgsrc-foundation` Git source
-revision, forbids treating it as a controller wrap, and requires the two
-bootstrap qualification recipes to live under product qualification rather than
-an ordinary product collection. The runtime-cohort probe must qualify sealed
-`C.UTF-8` authority from the final glibc artifact and use realization rather than
-truth-reconstruction vocabulary for check resources.
+revision, forbids treating it as a controller wrap, and requires the seed probe
+to live under product qualification rather than an ordinary product collection.
+The finished foundation runtime is qualified from the managed target and retained
+construction evidence, not through a second package closure that duplicates
+build- and target-environment selections.
 
 ## Bootstrap suite
 
@@ -64,8 +64,9 @@ controller report parsing, safe archive extraction, path traversal refusal and
 write-through-symlink refusal. It also requires the main stage to be one mixed
 `pkgctl run` transaction with exact `@foundation` convergence, attacks a non-default
 build parallelism value so the frontend cannot fall back to one job, rejects public
-main-stage artifact authority, and poisons a synthetic foundation root with compiler
-residue. Seed retirement remains explicitly unproven.
+main-stage artifact authority, rejects an explicit build goal that would recreate
+the target substrate in a parallel build environment, and poisons a synthetic
+foundation root with compiler residue. Seed retirement remains explicitly unproven.
 
 The real product qualification is intentionally separate from this suite:
 
@@ -82,7 +83,7 @@ Linux host. Important hostile follow-ups include:
 - controller binary replacement after admission;
 - changed build policy after admission;
 - interrupted seed qualification;
-- interrupted runtime-cohort construction/check;
+- interrupted foundation construction/check/convergence;
 - corrupted published artifact before `bootstrap check`; and
 - privilege-context drift.
 

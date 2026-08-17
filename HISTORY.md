@@ -3,12 +3,14 @@
 ## 0.1.0 — unreleased
 
 - Compose the exact `@foundation` profile into a private managed foundation root in
-  the same native transaction that constructs/checks the runtime cohort. Preserve
-  admitted build parallelism/epoch under `pkgctl run`, retain construction artifacts
-  only as private durable run evidence, and qualify the installed root against selected
-  artifact bytes while continuing to record seed retirement as unproven.
+  one native transaction, check the same target libgcc selection, preserve admitted
+  build parallelism/epoch under `pkgctl run`, retain construction artifacts only as
+  private durable run evidence, and qualify the installed root against selected
+  artifact bytes while continuing to record seed retirement as unproven. Avoid a
+  parallel build-environment reconstruction of the finished foundation substrate.
 - Advance `pkgsrc-foundation` to the seed-retirement-oriented source boundary,
-  require final glibc 2.44 release 2 with sealed `C.UTF-8` authority, and record
+  require final glibc 2.44 release 3 with sealed `C.UTF-8` and merged-/usr payload
+  namespace authority, and record
   the current product honestly as seed-assisted rather than prematurely claiming
   that historical seed construction authority has been retired.
 - Establish the pinned 35-project native controller source set.
@@ -22,8 +24,9 @@
 - Qualify external host dependencies without a private installed-prefix loop.
 - Record canonical historical rootfs seed descriptors.
 - Admit `pkgsrc-foundation` as a separately pinned product-input authority.
-- Move seed/runtime-cohort qualification recipes out of the package collection
-  and into bootstrap product qualification.
+- Move bootstrap-only qualification recipes out of the package collection and
+  into product qualification; later retire the runtime-cohort probe once the
+  managed foundation root becomes the qualification subject.
 - Add the Python `zlsystem bootstrap` frontend with seed acquisition,
   verification, restart, retained build policy, and independent terminal
   artifact qualification.
