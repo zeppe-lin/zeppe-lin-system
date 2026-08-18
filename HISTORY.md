@@ -2,6 +2,11 @@
 
 ## 0.1.0 — unreleased
 
+- Advance the controller composition to `libpkgtransaction` 4.1.0 and
+  `pkgctl` 0.40.1 so runtime requirements crossing a cyclic cohort are complete
+  transaction-owned executable ordering, then advance `pkgsrc-foundation` to
+  final glibc 2.44 release 6 with an explicit runtime dependency on the
+  `filesystem`-owned merged-/usr interpreter topology.
 - Separate destructive bootstrap cleanup admission from resumable workspace
   authority: obsolete marker-bound private workspaces may be removed without
   reconstructing missing product policy, while resume/check continue to fail
@@ -17,10 +22,11 @@
   artifact bytes while continuing to record seed retirement as unproven. Avoid a
   parallel build-environment reconstruction of the finished foundation substrate.
 - Advance `pkgsrc-foundation` to the seed-retirement-oriented source boundary,
-  require final glibc 2.44 release 5 with sealed `C.UTF-8`, canonical `/usr/sbin`
+  require final glibc 2.44 release 6 with sealed `C.UTF-8`, canonical `/usr/sbin`
   administration placement, explicit omission of translated libc message catalogs,
-  retained `locale.alias` runtime authority, and merged-/usr payload namespace
-  authority, and record
+  retained `locale.alias` runtime authority, merged-/usr payload namespace
+  authority, and the explicit `filesystem` runtime dependency required by that
+  topology, and record
   the current product honestly as seed-assisted rather than prematurely claiming
   that historical seed construction authority has been retired.
 - Establish the pinned 35-project native controller source set.

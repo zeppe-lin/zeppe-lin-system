@@ -130,13 +130,17 @@ foundation closure and checks the final libgcc selection:
 ```text
 linux-api-headers -> glibc
 linux-api-headers -> glibc-bootstrap -> libgcc
-                                  glibc <-> libgcc   (run)
-filesystem + glibc(release 4, C.UTF-8) + libgcc      (@foundation)
+filesystem -> glibc <-> libgcc                       (run cohort)
+filesystem + glibc(release 6, C.UTF-8) + libgcc      (@foundation)
                                            `-> check libgcc
 ```
 
-Dependency closure is resolved by the native package stack. The transaction
-selects `run=@foundation` with exact convergence into `main/foundation-root`,
+Dependency closure is resolved by the native package stack. Final glibc's
+runtime requirement on `filesystem` is package authority for the merged-/usr
+interpreter topology; `libpkgtransaction` 4.1.0 lifts that crossing requirement
+across the complete glibc/libgcc runtime cohort, so the system frontend does not
+encode cohort scheduling folklore. The transaction selects `run=@foundation`
+with exact convergence into `main/foundation-root`,
 `check=libgcc` against the same target selection, and the complete pkgctl
 `exact-compatible-sharing` operation-policy profile. `zeppe-lin-system` owns only
 that product-level profile selection; planner policy fields and their codec remain

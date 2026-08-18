@@ -79,6 +79,8 @@ control.
 ## Scope discipline
 
 Do not put dependency resolution, recipe execution, installed-state
-reconciliation, artifact publication, or package-image application logic in this
-repository. If orchestration needs to decode an owning library's private schema,
-fix the public controller/library boundary instead.
+reconciliation, transaction-cohort scheduling, artifact publication, or
+package-image application logic in this repository. If orchestration needs to
+decode or reconstruct an owning library's private semantics, fix the public
+controller/library boundary instead. Runtime-cohort executable ordering belongs
+to `libpkgtransaction`; package prerequisites belong to the package collection.

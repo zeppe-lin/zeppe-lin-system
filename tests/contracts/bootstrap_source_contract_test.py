@@ -6,7 +6,7 @@ import re
 import sys
 from pathlib import Path
 
-EXPECTED_REVISION = '7ba3bcd5ff3edc4b06222b5a15b9f162437ec344'
+EXPECTED_REVISION = 'd1f4a57f34054eb21649f3a2420f89f5a577f3d8'
 
 
 def fail(message: str) -> None:
@@ -33,7 +33,7 @@ def main() -> None:
     if source['url'] != 'https://github.com/zeppe-lin/pkgsrc-foundation.git':
         fail('foundation source authority is not the canonical repository')
     if source['revision'] != EXPECTED_REVISION or not re.fullmatch(r'[0-9a-f]{40}', source['revision']):
-        fail('foundation source is not pinned to the admitted migration commit')
+        fail('foundation source is not pinned to the admitted runtime-topology authority')
 
     if (root / 'subprojects' / 'pkgsrc-foundation.wrap').exists():
         fail('package-source metadata was smuggled into the controller subproject graph')
