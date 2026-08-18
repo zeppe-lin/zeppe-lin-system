@@ -20,7 +20,8 @@ EXPECTED = {
     'libpkgtransaction', 'pkgctl',
 }
 HEX40 = re.compile(r'^[0-9a-f]{40}$')
-EXPECTED_PKGCTL_REVISION = 'cedf10d6dd766c51378c5d632961f27bb0f7eef5'
+EXPECTED_PKGCTL_REVISION = '436f1382f5f5dcb6093e11b6074fbc15a7826f19'
+EXPECTED_APPLY_POSIX_REVISION = 'ec03cdb9a268465668e72f05e5fe60c046ee3d5e'
 EXPECTED_TRANSACTION_REVISION = '5e9b78ec702a96ee477c8d342824d9c6b5253022'
 
 
@@ -70,7 +71,10 @@ def main() -> None:
 
     pkgctl = load_wrap(wraps['pkgctl'])
     if pkgctl['wrap-git'].get('revision') != EXPECTED_PKGCTL_REVISION:
-        fail('pkgctl is not pinned to the admitted 0.40.1 release authority')
+        fail('pkgctl is not pinned to the admitted 0.40.2 release authority')
+    apply_posix = load_wrap(wraps['libpkgapply-posix'])
+    if apply_posix['wrap-git'].get('revision') != EXPECTED_APPLY_POSIX_REVISION:
+        fail('libpkgapply-posix is not pinned to the admitted 3.2.2 release authority')
     transaction = load_wrap(wraps['libpkgtransaction'])
     if transaction['wrap-git'].get('revision') != EXPECTED_TRANSACTION_REVISION:
         fail('libpkgtransaction is not pinned to the admitted 4.1.0 release authority')

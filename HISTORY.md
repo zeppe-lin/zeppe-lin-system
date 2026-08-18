@@ -2,6 +2,9 @@
 
 ## 0.1.0 — unreleased
 
+- Advance the native application provider to `libpkgapply-posix` 3.2.2 and
+  `pkgctl` 0.40.2 so retained old-object capture authority has bounded live
+  descriptor cardinality during large foundation application.
 - Advance the controller composition to `libpkgtransaction` 4.1.0 and
   `pkgctl` 0.40.1 so runtime requirements crossing a cyclic cohort are complete
   transaction-owned executable ordering, then advance `pkgsrc-foundation` to
