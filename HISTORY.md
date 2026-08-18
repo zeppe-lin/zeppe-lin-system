@@ -2,6 +2,11 @@
 
 ## 0.1.0 — unreleased
 
+- Bind configured controller realization to product source authority: attest each
+  materialized Meson fallback checkout against its exact wrap revision, stamp the
+  generated frontend with the complete wrap-set identity, require exact pkgctl
+  0.40.2 at bootstrap admission, and reject stale configured/build-tree authority
+  before expensive seed or foundation work begins.
 - Advance the native application provider to `libpkgapply-posix` 3.2.2 and
   `pkgctl` 0.40.2 so retained old-object capture authority has bounded live
   descriptor cardinality during large foundation application.

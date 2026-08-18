@@ -5,6 +5,7 @@ from pathlib import Path
 import sys
 
 SOURCE_ROOT = Path(r'@SOURCE_ROOT@')
+CONTROLLER_SOURCE_LOCK = r'@CONTROLLER_SOURCE_LOCK@'
 sys.path.insert(0, str(SOURCE_ROOT))
 
 from zlsystem.cli import main
@@ -17,4 +18,5 @@ raise SystemExit(main(BuildContext(
     pkgstate_init=Path(r'@PKGSTATE_INIT@'),
     git=Path(r'@GIT@'),
     readelf=Path(r'@READELF@'),
+    controller_source_lock=CONTROLLER_SOURCE_LOCK,
 )))

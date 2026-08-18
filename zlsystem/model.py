@@ -14,3 +14,4 @@ class BuildContext:
     pkgstate_init: Path
     git: Path
     readelf: Path
+    controller_source_lock: str = ''

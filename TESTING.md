@@ -34,16 +34,21 @@ absence.
 URLs, exact revisions and codec providers.
 
 `controller-boundary` requires host dependency qualification, pinned fallback
-forcing, build-tree controller target extraction, executable `zlsystem`
-generation, suppression of wrapped maintainer features, and registration of the
-product-level wrapped startup/isolation gates. It rejects the old
-`.toolchain`/pkg-config feedback loop and privileged product execution inside
-Meson.
+forcing, build-tree controller target extraction, source-lock stamping of the
+generated `zlsystem`, suppression of wrapped maintainer features, and registration
+of the product-level wrapped source/startup/isolation gates. It rejects the old
+`.toolchain`/pkg-config feedback loop and privileged product execution inside Meson.
 
-`wrapped-pkgctl-start` proves that the composed build-tree `pkgctl` executable and
-its wrapped shared-library closure can start without falling back to an installed
-native stack. `wrapped-isolation` is the privilege-sensitive mechanism gate
-described above.
+`wrapped-source-authority` compares every materialized fallback checkout HEAD with
+its exact committed wrap revision and rejects tracked modifications. The hostile
+`wrapped-source-authority-model` separately proves that an exact clean checkout is
+accepted while a stale HEAD and a dirty tracked worktree are refused. This closes
+the gap where `.wrap` text could be current while an existing Meson fallback tree
+remained old.
+
+`wrapped-pkgctl-start` requires the composed build-tree terminal controller to
+report exactly `pkgctl 0.40.2`; a merely executable stale binary is not sufficient.
+`wrapped-isolation` is the privilege-sensitive mechanism gate described above.
 
 `seed-descriptors` requires closed seed vocabulary, canonical release authority,
 SHA-256 archive/signature identities and an explicit default.
@@ -58,7 +63,9 @@ build- and target-environment selections.
 ## Bootstrap suite
 
 `bootstrap-model` attacks private authority primitives without requiring
-privilege or a real package transaction. It checks descriptor loading,
+privilege or a real package transaction. It rejects a generated frontend carrying
+a stale controller source-lock stamp, rejects a terminal controller release that
+differs from product authority, and checks descriptor loading,
 policy-sensitive request identity, qualification-sensitive target identity,
 controller report parsing, safe archive extraction, path traversal refusal and
 write-through-symlink refusal. It also requires the main stage to be one mixed

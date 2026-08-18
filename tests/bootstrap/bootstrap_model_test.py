@@ -99,7 +99,35 @@ def main() -> None:
     context = BuildContext(
         source_root=root, build_root=Path('/tmp/build'),
         pkgctl=Path('/controller/pkgctl'), pkgstate_init=Path('/controller/pkgstate-init'),
-        git=Path('/usr/bin/git'), readelf=Path('/usr/bin/readelf'))
+        git=Path('/usr/bin/git'), readelf=Path('/usr/bin/readelf'),
+        controller_source_lock=bootstrap.controller_source_lock_digest(root))
+    original_run_command = bootstrap.run_command
+    try:
+        bootstrap.run_command = lambda *args, **kwargs: bootstrap.CommandResult(
+            0, f'pkgctl {bootstrap.EXPECTED_PKGCTL_VERSION}\n', '')
+        bootstrap._validate_controller_release(context)
+        bootstrap.run_command = lambda *args, **kwargs: bootstrap.CommandResult(
+            0, 'pkgctl 0.40.1\n', '')
+        try:
+            bootstrap._validate_controller_release(context)
+        except bootstrap.BootstrapError:
+            pass
+        else:
+            fail('stale configured pkgctl release was accepted as product authority')
+    finally:
+        bootstrap.run_command = original_run_command
+    stale_context = BuildContext(
+        source_root=root, build_root=Path('/tmp/build'),
+        pkgctl=Path('/controller/pkgctl'), pkgstate_init=Path('/controller/pkgstate-init'),
+        git=Path('/usr/bin/git'), readelf=Path('/usr/bin/readelf'),
+        controller_source_lock='v1:sha256:' + '0' * 64)
+    try:
+        bootstrap._validate_controller_release(stale_context)
+    except bootstrap.BootstrapError as error:
+        if 'configured controller source lock differs' not in str(error):
+            fail(f'stale configured source-lock refusal is opaque: {error}')
+    else:
+        fail('stale configured source lock was accepted as controller authority')
     start_args = bootstrap._start_pkgctl_args(
         context, marker, qualification=False, maximum_steps=8)
     resume_args = bootstrap._resume_pkgctl_args(
@@ -295,15 +323,21 @@ artifact.0.sha256 abc
             fail('dirty cached foundation source was silently repaired')
 
         failed_workspace = temp / 'failed-bootstrap'
+        original_run_command = bootstrap.run_command
+        bootstrap.run_command = lambda *args, **kwargs: bootstrap.CommandResult(
+            0, f'pkgctl {bootstrap.EXPECTED_PKGCTL_VERSION}\n', '')
         try:
-            bootstrap.initialize(
-                context,
-                bootstrap.BootstrapOptions(
-                    workspace=failed_workspace, seed_name='missing-bootstrap-model-seed'))
-        except bootstrap.BootstrapError:
-            pass
-        else:
-            fail('invalid seed unexpectedly initialized a bootstrap workspace')
+            try:
+                bootstrap.initialize(
+                    context,
+                    bootstrap.BootstrapOptions(
+                        workspace=failed_workspace, seed_name='missing-bootstrap-model-seed'))
+            except bootstrap.BootstrapError:
+                pass
+            else:
+                fail('invalid seed unexpectedly initialized a bootstrap workspace')
+        finally:
+            bootstrap.run_command = original_run_command
         if failed_workspace.exists():
             fail('failed new bootstrap initialization retained an unmarked workspace')
 

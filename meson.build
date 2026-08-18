@@ -122,6 +122,17 @@ pkgctl_project = subproject('pkgctl')
 pkgctl_exe = pkgctl_project.get_variable('pkgctl_exe')
 libpkgexec_linux_dep = dependency('libpkgexec-linux', required: true)
 
+wrapped_source_authority_test = files(
+  'tests/controller/wrapped_source_authority_test.py',
+)
+run_command(
+  python3,
+  wrapped_source_authority_test,
+  meson.project_source_root(),
+  git.full_path(),
+  check: true,
+)
+
 alias_target('controller', pkgctl_exe, pkgstate_init_tool)
 
 controller_paths = configuration_data()
@@ -135,8 +146,16 @@ controller_paths_file = configure_file(
 
 message('controller paths: ' + controller_paths_file.full_path())
 
+controller_source_lock = run_command(
+  python3,
+  files('tests/controller/controller_source_lock_digest.py'),
+  meson.project_source_root(),
+  check: true,
+).stdout().strip()
+
 frontend_configuration = configuration_data()
 frontend_configuration.set('SOURCE_ROOT', meson.project_source_root())
+frontend_configuration.set('CONTROLLER_SOURCE_LOCK', controller_source_lock)
 frontend_configuration.set('BUILD_ROOT', meson.project_build_root())
 frontend_configuration.set('PKGCTL', pkgctl_exe.full_path())
 frontend_configuration.set('PKGSTATE_INIT', pkgstate_init_tool.full_path())
@@ -188,9 +207,32 @@ wrapped_isolation_test = executable(
   install: false,
 )
 test(
+  'wrapped-source-authority',
+  python3,
+  args: [
+    wrapped_source_authority_test,
+    meson.project_source_root(),
+    git.full_path(),
+  ],
+  suite: 'controller',
+)
+test(
+  'wrapped-source-authority-model',
+  python3,
+  args: [
+    files('tests/controller/wrapped_source_authority_model_test.py'),
+    meson.project_source_root(),
+  ],
+  suite: 'controller',
+)
+test(
   'wrapped-pkgctl-start',
-  pkgctl_exe,
-  args: ['--version'],
+  python3,
+  args: [
+    files('tests/controller/wrapped_pkgctl_release_test.py'),
+    pkgctl_exe.full_path(),
+    '0.40.2',
+  ],
   suite: 'controller',
 )
 test(

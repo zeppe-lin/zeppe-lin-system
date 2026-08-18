@@ -20,6 +20,7 @@ from pathlib import Path, PurePosixPath
 from typing import Mapping, Sequence
 
 from .model import BuildContext
+from .source_lock import controller_source_lock_digest
 
 WORKSPACE_FORMAT = 'zeppe-lin.system.bootstrap-workspace/1'
 MANIFEST_FORMAT = 'zeppe-lin.system.bootstrap-manifest/1'
@@ -29,6 +30,7 @@ DOMAIN = 'zeppe-lin/system/bootstrap/1'
 HOUSE_UMASK = '0022'
 OUTPUT_LAYOUT = 'package-root'
 FOUNDATION_OPERATION_PROFILE = 'exact-compatible-sharing'
+EXPECTED_PKGCTL_VERSION = '0.40.2'
 HEX40 = re.compile(r'^[0-9a-f]{40}$')
 HEX64 = re.compile(r'^[0-9a-f]{64}$')
 RUNTIME_DIRS = (
@@ -858,7 +860,27 @@ def _run_until_terminal(
     raise BootstrapError('bootstrap exceeded resume safety bound')
 
 
+def _validate_controller_release(context: BuildContext) -> None:
+    try:
+        source_lock = controller_source_lock_digest(context.source_root)
+    except (OSError, ValueError) as error:
+        raise BootstrapError(f'cannot identify current controller source lock: {error}') from error
+    if context.controller_source_lock != source_lock:
+        raise BootstrapError(
+            'configured controller source lock differs from current product authority; '
+            'reconfigure and rebuild the controller')
+
+    result = run_command([context.pkgctl, '--version'])
+    expected = f'pkgctl {EXPECTED_PKGCTL_VERSION}\n'
+    if result.status != 0 or result.stdout != expected or result.stderr:
+        detail = result.stderr.strip() or result.stdout.strip() or f'exit status {result.status}'
+        raise BootstrapError(
+            'configured pkgctl realization differs from product release authority; '
+            f'expected {expected.strip()!r}, observed {detail!r}')
+
+
 def _validate_controller(context: BuildContext, marker: Mapping[str, object]) -> None:
+    _validate_controller_release(context)
     controller = marker['controller']
     current_pkgctl = controller_digest(context.pkgctl)
     current_state = controller_digest(context.pkgstate_init)
@@ -908,6 +930,7 @@ def _reject_start_redeclaration(options: BootstrapOptions) -> None:
 
 def _initialize_attempt(context: BuildContext, options: BootstrapOptions) -> dict[str, object]:
     workspace = options.workspace.expanduser().resolve()
+    _validate_controller_release(context)
     if marker_path(workspace).exists():
         marker = load_marker(workspace)
         _validate_controller(context, marker)

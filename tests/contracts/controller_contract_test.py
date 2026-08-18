@@ -70,7 +70,24 @@ def main() -> None:
             'frontend pkgctl target authority')
     require(meson, "frontend_configuration.set('PKGSTATE_INIT', pkgstate_init_tool.full_path())",
             'frontend pkgstate-init target authority')
+    require(meson, "frontend_configuration.set('CONTROLLER_SOURCE_LOCK', controller_source_lock)",
+            'frontend configured source-lock authority')
+    require(meson, "'tests/controller/controller_source_lock_digest.py'",
+            'configured source-lock identity')
+    require(meson, "'tests/controller/wrapped_source_authority_test.py'",
+            'resolved fallback source authority test')
+    require(meson, 'wrapped_source_authority_test,',
+            'configure-time fallback source attestation')
+    require(meson, "'wrapped-source-authority'",
+            'wrapped source authority test registration')
+    require(meson, "'tests/controller/wrapped_source_authority_model_test.py'",
+            'hostile wrapped source authority model')
+    require(meson, "'wrapped-source-authority-model'",
+            'wrapped source authority hostile test registration')
     require(meson, "'wrapped-pkgctl-start'", 'wrapped controller startup test')
+    require(meson, "'tests/controller/wrapped_pkgctl_release_test.py'",
+            'wrapped pkgctl release witness')
+    require(meson, "'0.40.2'", 'admitted wrapped pkgctl release')
     require(meson, "'wrapped-isolation'", 'wrapped privileged isolation test')
     require(meson, "suite: 'integration-privileged'", 'privileged wrapper test suite')
 

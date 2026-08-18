@@ -32,6 +32,13 @@ meson compile -C build controller
 meson test -C build --suite contract --print-errorlogs
 ```
 
+When a committed wrap revision changes in an existing checkout, update/reset the
+materialized Meson subprojects and reconfigure before using the generated frontend.
+Configuration refuses a fallback checkout whose HEAD differs from its wrap or has
+tracked modifications. `build/zlsystem` carries a stamp of the configured wrap set
+and bootstrap refuses a stale generated frontend or a `pkgctl` release that differs
+from current product authority.
+
 `build/controller-paths.ini` records the exact build-tree `pkgctl` and
 `pkgstate-init` targets. Meson also generates the executable
 `build/zlsystem` frontend from those same target objects.

@@ -12,10 +12,17 @@ For each source-set change:
 2. do not use `HEAD`, `master`, tags, shallow `depth`, or local paths;
 3. keep `[provide]` aliases synchronized with the subproject's
    `meson.override_dependency()` names;
-4. run the contract suite;
-5. perform a clean controller build with no Zeppe-Lin development prefix in the
-   environment; and
-6. qualify the same commit set on a foreign Linux host.
+4. update/reset existing Meson fallback worktrees to the committed revisions;
+5. reconfigure so `wrapped-source-authority` attests the resolved clean checkout
+   set and the generated frontend receives the new source-lock stamp;
+6. compile the controller and run the contract/controller suites;
+7. perform the build with no Zeppe-Lin development prefix in the environment; and
+8. qualify the same commit set on a foreign Linux host.
+
+Do not infer that editing a `.wrap` file updates an already materialized fallback
+worktree or an existing `build/zlsystem`. Bootstrap rejects a frontend whose
+configured source-lock stamp differs from current product authority and rejects a
+`pkgctl` realization whose release is not the admitted terminal controller release.
 
 If a new controller dependency is introduced, add its wrap and every provided
 dependency name to `force_fallback_for`. The source-lock contract must fail until

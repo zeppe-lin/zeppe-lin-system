@@ -36,6 +36,15 @@ system frontend consumes their executable target objects. The remaining
 libraries are admitted through normal Meson dependency fallback and
 `meson.override_dependency()`.
 
+A committed wrap is declaration authority, not proof that an existing Meson
+fallback worktree realizes that declaration. Configuration therefore attests every
+resolved `subprojects/<name>` checkout against the exact wrap revision and rejects
+tracked source modifications. The generated `zlsystem` frontend is additionally
+stamped with an identity of the complete committed wrap set. Bootstrap admission
+compares that stamp with the current source tree and requires the exact admitted
+`pkgctl` release before seed or collection work begins. This prevents a new product
+source tree from driving a stale previously configured controller.
+
 `libpkgsource` and `libpkgcatalog` each provide both their library and codec
 dependency name. Those aliases are part of the source lock.
 
