@@ -7,6 +7,9 @@
   generated frontend with the complete wrap-set identity, require exact pkgctl
   0.40.2 at bootstrap admission, and reject stale configured/build-tree authority
   before expensive seed or foundation work begins.
+- Correct bootstrap artifact qualification to final glibc 2.44 release 6, matching
+  the admitted foundation revision and its explicit runtime dependency on the
+  filesystem-owned merged-/usr topology.
 - Advance the native application provider to `libpkgapply-posix` 3.2.2 and
   `pkgctl` 0.40.2 so retained old-object capture authority has bounded live
   descriptor cardinality during large foundation application.

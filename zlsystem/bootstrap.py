@@ -61,7 +61,7 @@ FOUNDATION_STAGE = 'seed-assisted-foundation-root-qualified'
 SEED_RETIREMENT_QUALIFIED = False
 EXPECTED_PACKAGE_COORDINATES = {
     'filesystem': ('1.0.0', '1'),
-    'glibc': ('2.44', '5'),
+    'glibc': ('2.44', '6'),
     'glibc-bootstrap': ('2.44', '1'),
     'libgcc': ('16.1.0', '1'),
     'linux-api-headers': ('7.1.8', '1'),

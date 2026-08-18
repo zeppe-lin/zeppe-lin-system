@@ -65,7 +65,8 @@ build- and target-environment selections.
 `bootstrap-model` attacks private authority primitives without requiring
 privilege or a real package transaction. It rejects a generated frontend carrying
 a stale controller source-lock stamp, rejects a terminal controller release that
-differs from product authority, and checks descriptor loading,
+differs from product authority, requires final glibc 2.44 release 6, and checks
+descriptor loading,
 policy-sensitive request identity, qualification-sensitive target identity,
 controller report parsing, safe archive extraction, path traversal refusal and
 write-through-symlink refusal. It also requires the main stage to be one mixed
