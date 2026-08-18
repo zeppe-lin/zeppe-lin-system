@@ -40,7 +40,10 @@ of the product-level wrapped source/startup/isolation gates. It rejects the old
 `.toolchain`/pkg-config feedback loop and privileged product execution inside Meson.
 
 `wrapped-source-authority` compares every materialized fallback checkout HEAD with
-its exact committed wrap revision and rejects tracked modifications. The hostile
+its exact committed wrap revision and rejects tracked modifications. A committed
+wrap that the configured controller does not select may remain unrealized; forcing
+unused source materialization would confuse declaration authority with configured
+realization. The hostile
 `wrapped-source-authority-model` separately proves that an exact clean checkout is
 accepted while a stale HEAD and a dirty tracked worktree are refused. This closes
 the gap where `.wrap` text could be current while an existing Meson fallback tree

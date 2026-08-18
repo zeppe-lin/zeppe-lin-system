@@ -50,6 +50,12 @@ def main() -> None:
         (subprojects / 'demo.wrap').write_text(
             '[wrap-git]\nurl = https://example.invalid/demo.git\nrevision = ' + first + '\n',
             encoding='utf-8')
+        # The complete source lock may contain an optional/unselected fallback
+        # that this configured realization never materializes. Its absence must
+        # not be confused with stale authority in a checkout Meson actually used.
+        (subprojects / 'unrealized.wrap').write_text(
+            '[wrap-git]\nurl = https://example.invalid/unrealized.git\nrevision = ' + first + '\n',
+            encoding='utf-8')
 
         accepted = run_checker(checker, root, git)
         if accepted.returncode != 0:
@@ -67,6 +73,11 @@ def main() -> None:
         dirty = run_checker(checker, root, git)
         if dirty.returncode == 0 or 'tracked modifications' not in dirty.stderr:
             fail('dirty tracked fallback checkout was not refused')
+
+        shutil.rmtree(checkout)
+        empty = run_checker(checker, root, git)
+        if empty.returncode == 0 or 'checkout set is empty' not in empty.stderr:
+            fail('vacuous source-authority attestation was not refused')
 
 
 if __name__ == '__main__':

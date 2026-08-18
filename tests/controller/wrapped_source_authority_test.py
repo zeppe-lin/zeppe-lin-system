@@ -49,12 +49,18 @@ def main() -> None:
     if not wraps:
         fail('controller source lock is empty')
 
+    checked = 0
     for wrap in wraps:
         name = wrap.stem
         expected = expected_revision(wrap)
         checkout = root / 'subprojects' / name
         if not checkout.is_dir():
-            fail(f'{name}: configured fallback checkout is absent; update Meson subprojects')
+            # A committed wrap is declaration authority, not an instruction to
+            # materialize an otherwise unused fallback. Meson has already
+            # resolved every dependency needed by this configured controller;
+            # attest only the checkouts that therefore exist.
+            continue
+        checked += 1
         observed = git_output(git, checkout, 'rev-parse', 'HEAD').strip()
         if observed != expected:
             fail(
@@ -64,6 +70,9 @@ def main() -> None:
             git, checkout, 'status', '--porcelain', '--untracked-files=no').strip()
         if dirty:
             fail(f'{name}: configured fallback checkout has tracked modifications')
+
+    if checked == 0:
+        fail('configured fallback checkout set is empty')
 
 
 if __name__ == '__main__':

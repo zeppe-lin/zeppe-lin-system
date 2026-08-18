@@ -2,6 +2,9 @@
 
 ## 0.1.0 — unreleased
 
+- Qualify configured fallback source attestation so committed but unselected
+  wraps may remain unrealized while every materialized checkout is still exact
+  and clean; reject a vacuous attestation with no realized fallbacks.
 - Bind configured controller realization to product source authority: attest each
   materialized Meson fallback checkout against its exact wrap revision, stamp the
   generated frontend with the complete wrap-set identity, require exact pkgctl
