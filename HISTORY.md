@@ -5,14 +5,19 @@
 - Bind configured controller realization to product source authority: attest each
   materialized Meson fallback checkout against its exact wrap revision, stamp the
   generated frontend with the complete wrap-set identity, require exact pkgctl
-  0.40.2 at bootstrap admission, and reject stale configured/build-tree authority
+  0.40.3 at bootstrap admission, and reject stale configured/build-tree authority
   before expensive seed or foundation work begins.
 - Correct bootstrap artifact qualification to final glibc 2.44 release 6, matching
   the admitted foundation revision and its explicit runtime dependency on the
   filesystem-owned merged-/usr topology.
-- Advance the native application provider to `libpkgapply-posix` 3.2.2 and
-  `pkgctl` 0.40.2 so retained old-object capture authority has bounded live
-  descriptor cardinality during large foundation application.
+- Advance the terminal controller to `pkgctl` 0.40.3 so subordinate application
+  uncertainty remains non-retiring controller authority: known residual effects,
+  durability-unconfirmed visible effects, and indeterminate application results
+  require explicit external resolution rather than being strengthened into
+  definitive transaction failure.
+- Advance the native application provider to `libpkgapply-posix` 3.2.2 so
+  retained old-object capture authority has bounded live descriptor cardinality
+  during large foundation application.
 - Advance the controller composition to `libpkgtransaction` 4.1.0 and
   `pkgctl` 0.40.1 so runtime requirements crossing a cyclic cohort are complete
   transaction-owned executable ordering, then advance `pkgsrc-foundation` to

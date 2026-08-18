@@ -87,7 +87,7 @@ def main() -> None:
     require(meson, "'wrapped-pkgctl-start'", 'wrapped controller startup test')
     require(meson, "'tests/controller/wrapped_pkgctl_release_test.py'",
             'wrapped pkgctl release witness')
-    require(meson, "'0.40.2'", 'admitted wrapped pkgctl release')
+    require(meson, "'0.40.3'", 'admitted wrapped pkgctl release')
     require(meson, "'wrapped-isolation'", 'wrapped privileged isolation test')
     require(meson, "suite: 'integration-privileged'", 'privileged wrapper test suite')
 
