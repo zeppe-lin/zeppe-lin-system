@@ -2,6 +2,12 @@
 
 ## 0.1.0 — unreleased
 
+- Advance the admitted application mechanism to `libpkgapply-posix` 3.2.3 and
+  terminal controller to `pkgctl` 0.40.4 after qualifying bounded active-namespace
+  durability descriptor cardinality. Retain the complete configured controller
+  source-lock identity in each new bootstrap workspace and require that exact
+  closure on run/resume/check, so changing a shared provider cannot inherit old
+  transaction authority merely because terminal executable bytes still match.
 - Qualify configured fallback source attestation so committed but unselected
   wraps may remain unrealized while every materialized checkout is still exact
   and clean; reject a vacuous attestation with no realized fallbacks.

@@ -58,6 +58,12 @@ def main() -> None:
         fail('foundation operation profile is not one product-owned selection')
     if "foundation-operation-policy-profile {_foundation_operation_profile(marker)}" not in product_sources:
         fail('bootstrap manifest omits the retained foundation operation profile')
+    if "'source_lock': context.controller_source_lock" not in product_sources:
+        fail('bootstrap workspace omits the configured controller source-lock authority')
+    if 'controller-source-lock {marker["controller"]["source_lock"]}' not in product_sources:
+        fail('bootstrap manifest omits the admitted controller source-lock authority')
+    if "controller.get('source_lock') != context.controller_source_lock" not in product_sources:
+        fail('bootstrap semantic admission does not bind retained controller closure')
     for foreign_vocabulary in (
             'shared_ownership_policy', 'incoming_path_policy', 'obsolete_path_policy',
             'directory_cleanup_policy', 'path_override_policy'):

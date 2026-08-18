@@ -43,7 +43,10 @@ tracked source modifications. The generated `zlsystem` frontend is additionally
 stamped with an identity of the complete committed wrap set. Bootstrap admission
 compares that stamp with the current source tree and requires the exact admitted
 `pkgctl` release before seed or collection work begins. This prevents a new product
-source tree from driving a stale previously configured controller.
+source tree from driving a stale previously configured controller. New workspaces
+also retain that complete source-lock identity as restart authority; later semantic
+admission requires the configured closure to equal the workspace admission rather
+than relying only on terminal executable digests.
 
 `libpkgsource` and `libpkgcatalog` each provide both their library and codec
 dependency name. Those aliases are part of the source lock.
@@ -195,6 +198,7 @@ it retains:
 seed descriptor and verified archive identity
 foundation Git revision, private snapshot and managed-root coordinate
 qualification snapshot digest
+complete configured controller source-lock identity
 exact pkgctl path and SHA-256
 exact pkgstate-init path and SHA-256
 native supervisor credentials
@@ -207,10 +211,12 @@ private seed-root coordinate
 Command nonces and state-target identities are domain-separated from those
 values. Build policy contributes to the start nonce. The foundation operation
 policy contributes to main transaction nonces and target/state identities but
-does not contaminate the build-only seed-qualification identities. Replacing
-either controller binary in place, changing explicit build or operation policy,
-changing privilege command, or substituting collection/qualification authority
-fails closed.
+does not contaminate the build-only seed-qualification identities. The controller
+source lock is restart/admission authority only; it does not enter package target
+identities or transaction nonces. Replacing either controller binary in place,
+changing the configured controller closure, changing explicit build or operation
+policy, changing privilege command, or substituting collection/qualification
+authority fails closed.
 
 `pkgctl --resume` remains responsible for transaction restart semantics. The
 system frontend only recovers the already admitted physical/product coordinates

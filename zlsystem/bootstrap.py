@@ -30,7 +30,7 @@ DOMAIN = 'zeppe-lin/system/bootstrap/1'
 HOUSE_UMASK = '0022'
 OUTPUT_LAYOUT = 'package-root'
 FOUNDATION_OPERATION_PROFILE = 'exact-compatible-sharing'
-EXPECTED_PKGCTL_VERSION = '0.40.3'
+EXPECTED_PKGCTL_VERSION = '0.40.4'
 HEX40 = re.compile(r'^[0-9a-f]{40}$')
 HEX64 = re.compile(r'^[0-9a-f]{64}$')
 RUNTIME_DIRS = (
@@ -881,14 +881,25 @@ def _validate_controller_release(context: BuildContext) -> None:
 
 def _validate_controller(context: BuildContext, marker: Mapping[str, object]) -> None:
     _validate_controller_release(context)
-    controller = marker['controller']
+    controller = marker.get('controller')
+    if not isinstance(controller, dict):
+        raise BootstrapError('bootstrap workspace controller authority is incomplete')
+    if controller.get('source_lock') != context.controller_source_lock:
+        raise BootstrapError(
+            'controller source lock differs from admitted bootstrap authority')
+
+    pkgctl = controller.get('pkgctl')
+    pkgstate_init = controller.get('pkgstate_init')
+    if not isinstance(pkgctl, dict) or not isinstance(pkgstate_init, dict):
+        raise BootstrapError('bootstrap workspace controller authority is incomplete')
+
     current_pkgctl = controller_digest(context.pkgctl)
     current_state = controller_digest(context.pkgstate_init)
-    if str(context.pkgctl.resolve()) != controller['pkgctl']['path'] or \
-            current_pkgctl != controller['pkgctl']['sha256']:
+    if str(context.pkgctl.resolve()) != pkgctl.get('path') or \
+            current_pkgctl != pkgctl.get('sha256'):
         raise BootstrapError('pkgctl differs from admitted bootstrap controller authority')
-    if str(context.pkgstate_init.resolve()) != controller['pkgstate_init']['path'] or \
-            current_state != controller['pkgstate_init']['sha256']:
+    if str(context.pkgstate_init.resolve()) != pkgstate_init.get('path') or \
+            current_state != pkgstate_init.get('sha256'):
         raise BootstrapError('pkgstate-init differs from admitted bootstrap controller authority')
 
 
@@ -1035,6 +1046,7 @@ def _initialize_attempt(context: BuildContext, options: BootstrapOptions) -> dic
             'snapshot': str(qualification_snapshot),
         },
         'controller': {
+            'source_lock': context.controller_source_lock,
             'pkgctl': {
                 'path': str(context.pkgctl.resolve()),
                 'sha256': controller_digest(context.pkgctl),
@@ -1186,6 +1198,7 @@ def check(context: BuildContext, options: BootstrapOptions) -> Path:
         f'seed-sha256 {marker["seed"]["sha256"]}',
         f'foundation-revision {marker["foundation"]["revision"]}',
         f'qualification-sha256 {marker["qualification"]["sha256"]}',
+        f'controller-source-lock {marker["controller"]["source_lock"]}',
         f'pkgctl-sha256 {marker["controller"]["pkgctl"]["sha256"]}',
         f'pkgstate-init-sha256 {marker["controller"]["pkgstate_init"]["sha256"]}',
         f'seed-qualification-sha256 {seed_artifact["sha256"]}',

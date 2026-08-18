@@ -23,6 +23,10 @@ Do not infer that editing a `.wrap` file updates an already materialized fallbac
 worktree or an existing `build/zlsystem`. Bootstrap rejects a frontend whose
 configured source-lock stamp differs from current product authority and rejects a
 `pkgctl` realization whose release is not the admitted terminal controller release.
+A new workspace retains that same complete source-lock identity. Any later wrap-set
+change makes the old workspace semantically incompatible even when the terminal
+executable path or digest happens to remain unchanged; clean the obsolete workspace
+and start fresh rather than adding a closure-compatibility decoder.
 
 If a new controller dependency is introduced, add its wrap and every provided
 dependency name to `force_fallback_for`. The source-lock contract must fail until
@@ -77,7 +81,8 @@ are sufficient deletion authority. Do not add a compatibility decoder merely so
 old workspaces can be cleaned.
 
 A resumed workspace must recover its admitted seed, collection snapshot, build
-policy, foundation operation-policy profile and controller identities. The
+policy, foundation operation-policy profile, complete controller source lock and
+controller executable identities. The
 product owns only the opaque complete pkgctl profile selection; it must not copy
 or decode libpkgplan policy vocabulary. Start-only authority is never redeclared
 by the frontend on `pkgctl --resume`; `--max-steps` remains live invocation

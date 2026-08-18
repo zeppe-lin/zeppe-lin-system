@@ -128,6 +128,44 @@ def main() -> None:
             fail(f'stale configured source-lock refusal is opaque: {error}')
     else:
         fail('stale configured source lock was accepted as controller authority')
+
+    marker['controller'] = {
+        'source_lock': context.controller_source_lock,
+        'pkgctl': {'path': str(context.pkgctl.resolve()), 'sha256': 'a' * 64},
+        'pkgstate_init': {
+            'path': str(context.pkgstate_init.resolve()), 'sha256': 'b' * 64},
+    }
+    original_validate_controller_release = bootstrap._validate_controller_release
+    original_controller_digest = bootstrap.controller_digest
+    try:
+        bootstrap._validate_controller_release = lambda value: None
+        bootstrap.controller_digest = lambda path: (
+            'a' * 64 if Path(path) == context.pkgctl else 'b' * 64)
+        bootstrap._validate_controller(context, marker)
+
+        admitted_source_lock = marker['controller']['source_lock']
+        marker['controller']['source_lock'] = 'v1:sha256:' + '0' * 64
+        try:
+            bootstrap._validate_controller(context, marker)
+        except bootstrap.BootstrapError as error:
+            if 'controller source lock differs from admitted bootstrap authority' not in str(error):
+                fail(f'workspace controller source-lock drift refusal is opaque: {error}')
+        else:
+            fail('workspace accepted a controller closure different from admission')
+
+        del marker['controller']['source_lock']
+        try:
+            bootstrap._validate_controller(context, marker)
+        except bootstrap.BootstrapError as error:
+            if 'controller source lock differs from admitted bootstrap authority' not in str(error):
+                fail(f'pre-source-lock workspace refusal is opaque: {error}')
+        else:
+            fail('pre-source-lock workspace remained resumable after closure admission')
+        marker['controller']['source_lock'] = admitted_source_lock
+    finally:
+        bootstrap._validate_controller_release = original_validate_controller_release
+        bootstrap.controller_digest = original_controller_digest
+
     start_args = bootstrap._start_pkgctl_args(
         context, marker, qualification=False, maximum_steps=8)
     resume_args = bootstrap._resume_pkgctl_args(

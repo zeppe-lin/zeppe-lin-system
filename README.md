@@ -37,7 +37,10 @@ materialized Meson subprojects and reconfigure before using the generated fronte
 Configuration refuses a fallback checkout whose HEAD differs from its wrap or has
 tracked modifications. `build/zlsystem` carries a stamp of the configured wrap set
 and bootstrap refuses a stale generated frontend or a `pkgctl` release that differs
-from current product authority.
+from current product authority. New workspaces retain that complete source-lock
+identity alongside the terminal executable digests; run, resume and check refuse a
+workspace admitted under another controller closure. `bootstrap clean` remains
+deletion-only and can remove such obsolete private bytes.
 
 `build/controller-paths.ini` records the exact build-tree `pkgctl` and
 `pkgstate-init` targets. Meson also generates the executable
