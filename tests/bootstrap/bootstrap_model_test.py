@@ -46,9 +46,11 @@ def main() -> None:
         fail('bootstrap model claims seed retirement before the hostile gate exists')
     for required_runtime in (
             'artifacts', 'target-locks', 'application-journals',
-            'application-checkpoints', 'lifecycle-sessions'):
+            'check-resources', 'check-temporary', 'lifecycle-sessions'):
         if required_runtime not in bootstrap.RUNTIME_DIRS:
             fail(f'mixed run runtime omits required private hierarchy: {required_runtime}')
+    if 'application-checkpoints' in bootstrap.RUNTIME_DIRS:
+        fail('bootstrap runtime resurrected retired application checkpoint authority')
     seed = bootstrap.load_seed_descriptor(root, None)
     if seed.architecture != 'x86_64' or len(seed.sha256) != 64:
         fail('default seed descriptor does not load')
@@ -107,7 +109,7 @@ def main() -> None:
             0, f'pkgctl {bootstrap.EXPECTED_PKGCTL_VERSION}\n', '')
         bootstrap._validate_controller_release(context)
         bootstrap.run_command = lambda *args, **kwargs: bootstrap.CommandResult(
-            0, 'pkgctl 0.40.1\n', '')
+            0, 'pkgctl 0.40.4\n', '')
         try:
             bootstrap._validate_controller_release(context)
         except bootstrap.BootstrapError:

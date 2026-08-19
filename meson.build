@@ -231,7 +231,7 @@ test(
   args: [
     files('tests/controller/wrapped_pkgctl_release_test.py'),
     pkgctl_exe.full_path(),
-    '0.40.4',
+    '0.41.0',
   ],
   suite: 'controller',
 )

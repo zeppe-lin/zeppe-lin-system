@@ -20,9 +20,24 @@ EXPECTED = {
     'libpkgtransaction', 'pkgctl',
 }
 HEX40 = re.compile(r'^[0-9a-f]{40}$')
-EXPECTED_PKGCTL_REVISION = 'a6f04c06bd3265723529f38a1b1167390e018869'
-EXPECTED_APPLY_POSIX_REVISION = 'c05772fba235526c401ee4825eed5faa89a34fcf'
-EXPECTED_TRANSACTION_REVISION = '5e9b78ec702a96ee477c8d342824d9c6b5253022'
+EXPECTED_CONTROLLER_REVISIONS = {
+    'libpkgapply': (
+        '36aa530ae07dc1c2a7f1ee999a7626977fc8a53e', '4.0.1'),
+    'libpkgapply-exec': (
+        'efbae2415b93ef001dad8aa8cdd34365cadd304b', '3.0.2'),
+    'libpkgapply-posix': (
+        '61b0595e11edb4c072e3f05aa8672f3e4c8569e5', '4.0.0'),
+    'libpkgreconcile-apply': (
+        'e5d03cd518b25d01a462aaf411980cf02af0a4f9', '0.1.2'),
+    'libpkgreconcile-apply-posix': (
+        '1cf029d8f3626bb3544b0f14092f5806d92a0f5b', '0.1.2'),
+    'libpkgstate-apply': (
+        '6af8af6547612e096e07acdb27daaeb3ee530711', '3.1.3'),
+    'libpkgtransaction': (
+        '5e9b78ec702a96ee477c8d342824d9c6b5253022', '4.1.0'),
+    'pkgctl': (
+        '0370f41fdb67203b475b37c19d74a083903e7637', '0.41.0'),
+}
 
 
 def fail(message: str) -> None:
@@ -69,15 +84,10 @@ def main() -> None:
             if forbidden in section:
                 fail(f'{name}: {forbidden} is forbidden in canonical source lock')
 
-    pkgctl = load_wrap(wraps['pkgctl'])
-    if pkgctl['wrap-git'].get('revision') != EXPECTED_PKGCTL_REVISION:
-        fail('pkgctl is not pinned to the admitted 0.40.4 release authority')
-    apply_posix = load_wrap(wraps['libpkgapply-posix'])
-    if apply_posix['wrap-git'].get('revision') != EXPECTED_APPLY_POSIX_REVISION:
-        fail('libpkgapply-posix is not pinned to the admitted 3.2.3 release authority')
-    transaction = load_wrap(wraps['libpkgtransaction'])
-    if transaction['wrap-git'].get('revision') != EXPECTED_TRANSACTION_REVISION:
-        fail('libpkgtransaction is not pinned to the admitted 4.1.0 release authority')
+    for name, (expected_revision, release) in EXPECTED_CONTROLLER_REVISIONS.items():
+        actual = load_wrap(wraps[name])['wrap-git'].get('revision')
+        if actual != expected_revision:
+            fail(f'{name} is not pinned to the admitted {release} release authority')
 
     catalog = load_wrap(wraps['libpkgcatalog'])
     if catalog.get('provide', 'dependency_names', fallback='') != \

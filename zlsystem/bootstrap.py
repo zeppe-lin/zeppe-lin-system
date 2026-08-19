@@ -30,15 +30,15 @@ DOMAIN = 'zeppe-lin/system/bootstrap/1'
 HOUSE_UMASK = '0022'
 OUTPUT_LAYOUT = 'package-root'
 FOUNDATION_OPERATION_PROFILE = 'exact-compatible-sharing'
-EXPECTED_PKGCTL_VERSION = '0.40.4'
+EXPECTED_PKGCTL_VERSION = '0.41.0'
 HEX40 = re.compile(r'^[0-9a-f]{40}$')
 HEX64 = re.compile(r'^[0-9a-f]{64}$')
 RUNTIME_DIRS = (
     'command-evidence', 'run', 'evidence', 'effects',
-    'target-locks', 'application-journals', 'application-checkpoints',
+    'target-locks', 'application-journals',
     'payload', 'capture', 'rejected', 'completed', 'effect-bodies',
     'content', 'construction-sessions', 'package-outputs', 'artifacts',
-    'check-temporary', 'lifecycle-sessions',
+    'check-resources', 'check-temporary', 'lifecycle-sessions',
 )
 SEED_ROOT_DIRS = (
     ('dev', 0o755),

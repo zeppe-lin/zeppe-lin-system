@@ -2,12 +2,16 @@
 
 ## 0.1.0 — unreleased
 
-- Advance the admitted application mechanism to `libpkgapply-posix` 3.2.3 and
-  terminal controller to `pkgctl` 0.40.4 after qualifying bounded active-namespace
-  durability descriptor cardinality. Retain the complete configured controller
-  source-lock identity in each new bootstrap workspace and require that exact
-  closure on run/resume/check, so changing a shared provider cannot inherit old
-  transaction authority merely because terminal executable bytes still match.
+- Advance the admitted application/controller cohort to `libpkgapply` 4.0.1,
+  `libpkgapply-posix` 4.0.0, `libpkgapply-exec` 3.0.2, `libpkgstate-apply` 3.1.3,
+  the reconciliation apply adapters 0.1.2, and terminal `pkgctl` 0.41.0. Retire
+  the obsolete `application-checkpoints` bootstrap namespace: application history
+  is one owner-authored append-only declaration/step/cursor spine, and controller
+  restart rehydrates that authority through libpkgapply rather than a second
+  checkpoint record. Pre-create the caller-owned `check-resources` class root
+  required by the wrapped controller instead of relying on leaf realization to
+  manufacture it. The changed complete source lock intentionally makes older
+  bootstrap workspaces non-resumable instead of reconstructing compatibility.
 - Qualify configured fallback source attestation so committed but unselected
   wraps may remain unrealized while every materialized checkout is still exact
   and clean; reject a vacuous attestation with no realized fallbacks.

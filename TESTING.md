@@ -50,7 +50,7 @@ the gap where `.wrap` text could be current while an existing Meson fallback tre
 remained old.
 
 `wrapped-pkgctl-start` requires the composed build-tree terminal controller to
-report exactly `pkgctl 0.40.4`; a merely executable stale binary is not sufficient.
+report exactly `pkgctl 0.41.0`; a merely executable stale binary is not sufficient.
 `wrapped-isolation` is the privilege-sensitive mechanism gate described above.
 
 `seed-descriptors` requires closed seed vocabulary, canonical release authority,
@@ -69,7 +69,10 @@ build- and target-environment selections.
 privilege or a real package transaction. It rejects a generated frontend carrying
 a stale controller source-lock stamp, rejects a terminal controller release that
 differs from product authority, rejects both missing and changed workspace-retained
-controller source locks without reconstructing compatibility, requires final glibc
+controller source locks without reconstructing compatibility, requires the
+append-only `application-journals` runtime hierarchy plus the caller-owned
+`check-resources` class root while refusing the retired `application-checkpoints`
+namespace, requires final glibc
 2.44 release 6, and checks
 descriptor loading,
 policy-sensitive request identity, qualification-sensitive target identity,
