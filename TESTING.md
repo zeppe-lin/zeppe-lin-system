@@ -50,7 +50,7 @@ the gap where `.wrap` text could be current while an existing Meson fallback tre
 remained old.
 
 `wrapped-pkgctl-start` requires the composed build-tree terminal controller to
-report exactly `pkgctl 0.42.1`; a merely executable stale binary is not sufficient.
+report exactly `pkgctl 0.42.2`; a merely executable stale binary is not sufficient.
 `wrapped-isolation` is the privilege-sensitive mechanism gate described above.
 
 `seed-descriptors` requires closed seed vocabulary, canonical release authority,

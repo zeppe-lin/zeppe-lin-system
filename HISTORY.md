@@ -2,6 +2,14 @@
 
 ## 0.1.0 — unreleased
 
+- Advance terminal `pkgctl` to 0.42.2 and bind the build-selection cohort.
+  Direct BUILD/CHECK subject necessity remains resolver goal authority, while
+  flexible dependency selection retains compatible installed authority instead
+  of receiving a frontend-wide catalog preference. This exposes only the
+  existing exact installed-input realization path: no artifact import, cache
+  discovery, or dependency reconstruction authority is added. Bind the exact
+  terminal revision in the complete controller source lock so workspaces from
+  the superseded cohort fail closed under controller substitution.
 - Advance the controller phase-activation cohort to `libpkgbuild` 3.0.3 and
   terminal `pkgctl` 0.42.1. CHECK package requirements remain declared source
   authority but become active build-request inputs only for exact selections
