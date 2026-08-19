@@ -168,16 +168,19 @@ def identity_for(domain: str, marker: Mapping[str, object]) -> str:
     return f'v1:sha256:{digest}'
 
 
-def seed_execution_root_view_identity(marker: Mapping[str, object]) -> str:
+def seed_execution_root_view_digest(marker: Mapping[str, object]) -> str:
     layout = tuple(f'{relative}:{mode:o}' for relative, mode in SEED_ROOT_DIRS)
-    digest = material_digest(
+    return material_digest(
         DOMAIN,
         'seed-execution-root-view',
         SEED_PROTOCOL,
         marker['seed']['sha256'],
         *layout,
     )
-    return f'v1:sha256:{digest}'
+
+
+def seed_execution_root_view_identity(marker: Mapping[str, object]) -> str:
+    return f'v1:sha256:{seed_execution_root_view_digest(marker)}'
 
 
 def nonce_for(domain: str, marker: Mapping[str, object]) -> str:
@@ -771,14 +774,14 @@ def _start_pkgctl_args(
         '--build-parallelism', str(policy['parallelism']),
         '--build-source-date-epoch', str(policy['source_date_epoch']),
         '--runtime-root', base / 'runtime',
-        '--build-root-view', seed_execution_root_view_identity(marker),
+        '--build-root-view', seed_execution_root_view_digest(marker),
         '--build-root', root,
     ]
     if qualification:
         args += ['--artifact-root', base / 'artifacts']
     else:
         args += [
-            '--lifecycle-root-view', seed_execution_root_view_identity(marker),
+            '--lifecycle-root-view', seed_execution_root_view_digest(marker),
             '--lifecycle-root', root,
             '--target-root', _foundation_root(marker),
         ]

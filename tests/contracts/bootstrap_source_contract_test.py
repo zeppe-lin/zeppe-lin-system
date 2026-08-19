@@ -64,6 +64,11 @@ def main() -> None:
         fail('bootstrap manifest omits the admitted controller source-lock authority')
     if 'seed-execution-root-view {seed_execution_root_view_identity(marker)}' not in product_sources:
         fail('bootstrap manifest omits admitted historical seed root-view authority')
+    if "'--build-root-view', seed_execution_root_view_digest(marker)" not in product_sources or \
+            "'--lifecycle-root-view', seed_execution_root_view_digest(marker)" not in product_sources:
+        fail('pkgctl execution root-view options do not receive raw SHA-256 digests')
+    if "return f'v1:sha256:{seed_execution_root_view_digest(marker)}'" not in product_sources:
+        fail('system evidence does not retain typed seed execution root-view identity')
     for root_view_option in ('--build-root-view', '--lifecycle-root-view'):
         if root_view_option not in product_sources:
             fail(f'bootstrap start omits explicit execution root-view authority: {root_view_option}')

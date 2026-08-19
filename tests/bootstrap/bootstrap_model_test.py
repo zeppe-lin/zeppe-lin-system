@@ -70,7 +70,12 @@ def main() -> None:
             'output_layout': 'package-root',
         },
     }
+    seed_execution_root_digest = bootstrap.seed_execution_root_view_digest(marker)
     seed_execution_root_view = bootstrap.seed_execution_root_view_identity(marker)
+    if not bootstrap.HEX64.fullmatch(seed_execution_root_digest):
+        fail('seed execution root-view CLI digest is not raw SHA-256')
+    if seed_execution_root_view != f'v1:sha256:{seed_execution_root_digest}':
+        fail('typed seed execution root-view identity does not wrap the CLI digest')
     original_foundation_revision = marker['foundation']['revision']
     marker['foundation']['revision'] = 'f' * 40
     if bootstrap.seed_execution_root_view_identity(marker) != seed_execution_root_view:
@@ -225,18 +230,19 @@ def main() -> None:
     target_index = start_args.index('--target-root')
     if start_args[target_index + 1] != '/tmp/bootstrap-workspace/main/foundation-root':
         fail('mixed run target is not the private foundation managed root')
+    admitted_seed_root_digest = bootstrap.seed_execution_root_view_digest(marker)
     admitted_seed_root_view = bootstrap.seed_execution_root_view_identity(marker)
     build_root_view_index = start_args.index('--build-root-view')
     lifecycle_root_view_index = start_args.index('--lifecycle-root-view')
-    if start_args[build_root_view_index + 1] != admitted_seed_root_view:
+    if start_args[build_root_view_index + 1] != admitted_seed_root_digest:
         fail('construction/CHECK root-view authority is not explicitly bound to S0')
-    if start_args[lifecycle_root_view_index + 1] != admitted_seed_root_view:
+    if start_args[lifecycle_root_view_index + 1] != admitted_seed_root_digest:
         fail('lifecycle root-view authority is not explicitly bound to S0')
     target_root_view_index = start_args.index('--root-view')
-    if start_args[target_root_view_index + 1] == admitted_seed_root_view:
+    if start_args[target_root_view_index + 1] in (admitted_seed_root_digest, admitted_seed_root_view):
         fail('managed target root-view authority collapsed into S0 execution authority')
     qualification_root_view_index = qualification_args.index('--build-root-view')
-    if qualification_args[qualification_root_view_index + 1] != admitted_seed_root_view:
+    if qualification_args[qualification_root_view_index + 1] != admitted_seed_root_digest:
         fail('seed qualification construction root-view authority differs from S0')
     if '--lifecycle-root-view' in qualification_args:
         fail('build-only seed qualification gained lifecycle root-view authority')
