@@ -2,6 +2,13 @@
 
 ## 0.1.0 — unreleased
 
+- Advance the controller phase-activation cohort to `libpkgbuild` 3.0.3 and
+  terminal `pkgctl` 0.42.1. CHECK package requirements remain declared source
+  authority but become active build-request inputs only for exact selections
+  admitted by CHECK goals; transitive BUILD-only selections no longer demand
+  resolver authority for dormant CHECK edges. Bind both provider revisions in
+  the complete controller source lock so workspaces admitted under the defective
+  cohort fail closed instead of resuming under substituted controller bytes.
 - Advance terminal `pkgctl` to 0.42.0 and bind construction/CHECK plus lifecycle
   execution to an explicit historical-seed root-view identity instead of borrowing
   the managed target root-view identity. BUILD/CHECK and lifecycle retain the same

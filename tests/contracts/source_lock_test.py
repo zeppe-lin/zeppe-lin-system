@@ -27,6 +27,8 @@ EXPECTED_CONTROLLER_REVISIONS = {
         'efbae2415b93ef001dad8aa8cdd34365cadd304b', '3.0.2'),
     'libpkgapply-posix': (
         '61b0595e11edb4c072e3f05aa8672f3e4c8569e5', '4.0.0'),
+    'libpkgbuild': (
+        '8dc3f17ec152330e98391eb747a377e9c2bb6db8', '3.0.3'),
     'libpkgreconcile-apply': (
         'e5d03cd518b25d01a462aaf411980cf02af0a4f9', '0.1.2'),
     'libpkgreconcile-apply-posix': (
@@ -36,7 +38,7 @@ EXPECTED_CONTROLLER_REVISIONS = {
     'libpkgtransaction': (
         '5e9b78ec702a96ee477c8d342824d9c6b5253022', '4.1.0'),
     'pkgctl': (
-        '006c560bef1ddaa4f7ee5145e8be3c81ec3bdeb4', '0.42.0'),
+        '738a93dc1754ba21d8a32b381948755f11c4a5ab', '0.42.1'),
 }
 
 
