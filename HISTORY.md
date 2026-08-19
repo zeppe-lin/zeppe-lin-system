@@ -2,6 +2,13 @@
 
 ## 0.1.0 — unreleased
 
+- Advance terminal `pkgctl` to 0.42.0 and bind construction/CHECK plus lifecycle
+  execution to an explicit historical-seed root-view identity instead of borrowing
+  the managed target root-view identity. BUILD/CHECK and lifecycle retain the same
+  S0 root in separate controller authority slots; resume supplies only live physical
+  root coordinates and cannot redeclare those semantic identities. Record the S0
+  execution-root identity in the bootstrap manifest. The controller source-lock
+  change intentionally invalidates workspaces admitted under the conflated model.
 - Advance the admitted application/controller cohort to `libpkgapply` 4.0.1,
   `libpkgapply-posix` 4.0.0, `libpkgapply-exec` 3.0.2, `libpkgstate-apply` 3.1.3,
   the reconciliation apply adapters 0.1.2, and terminal `pkgctl` 0.41.0. Retire

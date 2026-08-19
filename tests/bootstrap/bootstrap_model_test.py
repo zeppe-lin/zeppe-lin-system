@@ -70,6 +70,22 @@ def main() -> None:
             'output_layout': 'package-root',
         },
     }
+    seed_execution_root_view = bootstrap.seed_execution_root_view_identity(marker)
+    original_foundation_revision = marker['foundation']['revision']
+    marker['foundation']['revision'] = 'f' * 40
+    if bootstrap.seed_execution_root_view_identity(marker) != seed_execution_root_view:
+        fail('foundation source authority contaminates historical seed root-view identity')
+    marker['foundation']['revision'] = original_foundation_revision
+    marker['qualification']['sha256'] = '2' * 64
+    if bootstrap.seed_execution_root_view_identity(marker) != seed_execution_root_view:
+        fail('qualification authority contaminates historical seed root-view identity')
+    marker['qualification']['sha256'] = '1' * 64
+    original_seed_sha = marker['seed']['sha256']
+    marker['seed']['sha256'] = '3' * 64
+    if bootstrap.seed_execution_root_view_identity(marker) == seed_execution_root_view:
+        fail('historical seed bytes do not contribute to seed root-view identity')
+    marker['seed']['sha256'] = original_seed_sha
+
     main_nonce = bootstrap.nonce_for('foundation-root', marker)
     marker['build_policy']['parallelism'] = 11
     if bootstrap.nonce_for('foundation-root', marker) == main_nonce:
@@ -190,6 +206,7 @@ def main() -> None:
     if any(goal.startswith('build=') for goal in observed_goals):
         fail('mixed run reintroduced a parallel explicit construction root')
     for token in ('--prefer-catalog', '--converge-exact', '--operation-policy',
+                  '--build-root-view', '--lifecycle-root-view',
                   '--lifecycle-root', '--target-root'):
         if token not in start_args:
             fail(f'mixed run omits required composition authority: {token}')
@@ -208,12 +225,28 @@ def main() -> None:
     target_index = start_args.index('--target-root')
     if start_args[target_index + 1] != '/tmp/bootstrap-workspace/main/foundation-root':
         fail('mixed run target is not the private foundation managed root')
+    admitted_seed_root_view = bootstrap.seed_execution_root_view_identity(marker)
+    build_root_view_index = start_args.index('--build-root-view')
+    lifecycle_root_view_index = start_args.index('--lifecycle-root-view')
+    if start_args[build_root_view_index + 1] != admitted_seed_root_view:
+        fail('construction/CHECK root-view authority is not explicitly bound to S0')
+    if start_args[lifecycle_root_view_index + 1] != admitted_seed_root_view:
+        fail('lifecycle root-view authority is not explicitly bound to S0')
+    target_root_view_index = start_args.index('--root-view')
+    if start_args[target_root_view_index + 1] == admitted_seed_root_view:
+        fail('managed target root-view authority collapsed into S0 execution authority')
+    qualification_root_view_index = qualification_args.index('--build-root-view')
+    if qualification_args[qualification_root_view_index + 1] != admitted_seed_root_view:
+        fail('seed qualification construction root-view authority differs from S0')
+    if '--lifecycle-root-view' in qualification_args:
+        fail('build-only seed qualification gained lifecycle root-view authority')
     lifecycle_index = start_args.index('--lifecycle-root')
     if start_args[lifecycle_index + 1] != '/tmp/bootstrap-workspace/seed-root':
         fail('seed-assisted lifecycle authority is not explicitly bounded to S0')
     for token in ('--collection', '--build-parallelism', '--build-source-date-epoch',
                   '--goal', '--prefer-catalog', '--converge-exact',
-                  '--operation-policy', '--start'):
+                  '--operation-policy', '--build-root-view',
+                  '--lifecycle-root-view', '--start'):
         if token not in start_args:
             fail(f'start command omits admitted semantic option: {token}')
         if token in resume_args:

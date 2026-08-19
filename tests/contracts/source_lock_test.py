@@ -36,7 +36,7 @@ EXPECTED_CONTROLLER_REVISIONS = {
     'libpkgtransaction': (
         '5e9b78ec702a96ee477c8d342824d9c6b5253022', '4.1.0'),
     'pkgctl': (
-        '0370f41fdb67203b475b37c19d74a083903e7637', '0.41.0'),
+        '006c560bef1ddaa4f7ee5145e8be3c81ec3bdeb4', '0.42.0'),
 }
 
 

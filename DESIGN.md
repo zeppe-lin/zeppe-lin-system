@@ -173,19 +173,25 @@ remain graph nodes/artifacts rather than desired installed state.
 The main transaction converges that exact profile into a private managed target and
 retains its construction artifacts beneath the run-private runtime hierarchy. It
 still executes construction/lifecycle authority from the admitted historical seed.
-Therefore `bootstrap.manifest` records:
+The S0 execution root is named independently from the managed target: its opaque
+root-view identity is derived from the exact admitted seed archive plus the
+product-owned execution-root layout. BUILD/CHECK and lifecycle retain that same S0
+identity in distinct controller authority slots; resume supplies only current
+physical root coordinates and cannot redeclare either semantic identity. Therefore
+`bootstrap.manifest` records:
 
 ```text
 foundation-stage seed-assisted-foundation-root-qualified
 foundation-operation-policy-profile exact-compatible-sharing
 foundation-profile @foundation
 foundation-members filesystem,glibc,libgcc
+seed-execution-root-view v1:sha256:<admitted-seed-root-view>
 seed-retirement-qualified no
 ```
 
 The later seed-retirement milestone must compose exact native construction
 authority, revoke access to the historical seed, and successfully continue
-construction. Only that hostile transition may change the second fact to `yes`.
+construction. Only that hostile transition may change `seed-retirement-qualified` to `yes`.
 Directory presence or successful execution while S0 remains reachable is not
 seed-retirement evidence.
 

@@ -62,6 +62,14 @@ def main() -> None:
         fail('bootstrap workspace omits the configured controller source-lock authority')
     if 'controller-source-lock {marker["controller"]["source_lock"]}' not in product_sources:
         fail('bootstrap manifest omits the admitted controller source-lock authority')
+    if 'seed-execution-root-view {seed_execution_root_view_identity(marker)}' not in product_sources:
+        fail('bootstrap manifest omits admitted historical seed root-view authority')
+    for root_view_option in ('--build-root-view', '--lifecycle-root-view'):
+        if root_view_option not in product_sources:
+            fail(f'bootstrap start omits explicit execution root-view authority: {root_view_option}')
+    if "'seed-execution-root-view'" not in product_sources or \
+            "marker['seed']['sha256']" not in product_sources:
+        fail('historical seed root-view identity is not derived from admitted seed bytes')
     if "controller.get('source_lock') != context.controller_source_lock" not in product_sources:
         fail('bootstrap semantic admission does not bind retained controller closure')
     for foreign_vocabulary in (

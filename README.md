@@ -83,7 +83,11 @@ On a new workspace it:
 The current bootstrap is deliberately **seed-assisted**. It now composes the stable
 `@foundation` substrate (`filesystem`, final `glibc`, `libgcc`) into a real managed
 root, but construction and lifecycle execution authority for this transaction still
-comes from the admitted historical seed. The manifest therefore records
+comes from the admitted historical seed. That S0 execution root has its own
+opaque root-view identity, admitted from the exact seed bytes plus product-owned
+execution-root layout; it is not inferred from the managed target root. BUILD/CHECK
+and lifecycle bind that same S0 identity in distinct controller authority slots.
+The manifest therefore records
 `foundation-stage seed-assisted-foundation-root-qualified` and
 `seed-retirement-qualified no`. A later hostile seed-retirement gate, not root
 composition itself, owns the transition to seed-free construction.

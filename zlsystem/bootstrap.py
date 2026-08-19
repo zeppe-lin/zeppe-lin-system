@@ -30,7 +30,7 @@ DOMAIN = 'zeppe-lin/system/bootstrap/1'
 HOUSE_UMASK = '0022'
 OUTPUT_LAYOUT = 'package-root'
 FOUNDATION_OPERATION_PROFILE = 'exact-compatible-sharing'
-EXPECTED_PKGCTL_VERSION = '0.41.0'
+EXPECTED_PKGCTL_VERSION = '0.42.0'
 HEX40 = re.compile(r'^[0-9a-f]{40}$')
 HEX64 = re.compile(r'^[0-9a-f]{64}$')
 RUNTIME_DIRS = (
@@ -164,6 +164,18 @@ def identity_for(domain: str, marker: Mapping[str, object]) -> str:
         marker['foundation']['revision'],
         marker['qualification']['sha256'],
         _operation_policy_binding(domain, marker),
+    )
+    return f'v1:sha256:{digest}'
+
+
+def seed_execution_root_view_identity(marker: Mapping[str, object]) -> str:
+    layout = tuple(f'{relative}:{mode:o}' for relative, mode in SEED_ROOT_DIRS)
+    digest = material_digest(
+        DOMAIN,
+        'seed-execution-root-view',
+        SEED_PROTOCOL,
+        marker['seed']['sha256'],
+        *layout,
     )
     return f'v1:sha256:{digest}'
 
@@ -759,12 +771,14 @@ def _start_pkgctl_args(
         '--build-parallelism', str(policy['parallelism']),
         '--build-source-date-epoch', str(policy['source_date_epoch']),
         '--runtime-root', base / 'runtime',
+        '--build-root-view', seed_execution_root_view_identity(marker),
         '--build-root', root,
     ]
     if qualification:
         args += ['--artifact-root', base / 'artifacts']
     else:
         args += [
+            '--lifecycle-root-view', seed_execution_root_view_identity(marker),
             '--lifecycle-root', root,
             '--target-root', _foundation_root(marker),
         ]
@@ -1213,6 +1227,7 @@ def check(context: BuildContext, options: BootstrapOptions) -> Path:
         f'foundation-managed-target {identity_for("managed-target", marker)}',
         f'foundation-state-store {identity_for("state-store", marker)}',
         f'foundation-root-view {identity_for("root-view", marker)}',
+        f'seed-execution-root-view {seed_execution_root_view_identity(marker)}',
         f'seed-retirement-qualified {"yes" if SEED_RETIREMENT_QUALIFIED else "no"}',
     ]
 
