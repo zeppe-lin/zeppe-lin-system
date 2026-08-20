@@ -78,19 +78,23 @@ controller source locks without reconstructing compatibility, requires the
 append-only `application-journals` runtime hierarchy plus the caller-owned
 `check-resources` class root while refusing the retired `application-checkpoints`
 namespace, requires final glibc
-2.44 release 6, and checks
+2.44 release 6, requires the exact Stage-B product model and ten-artifact handoff,
+and checks
 descriptor loading,
 policy-sensitive request identity, qualification-sensitive target identity,
 controller report parsing, safe archive extraction, path traversal refusal and
 write-through-symlink refusal. It also requires the main stage to be one mixed
-`pkgctl run` transaction with exact `@foundation` convergence, attacks a non-default
+`pkgctl run` transaction with exact `@foundation` convergence plus independent
+`check=libgcc` and `check=gcc-bootstrap` goals, attacks a non-default
 build parallelism value so the frontend cannot fall back to one job, requires
 main start to select the complete `exact-compatible-sharing` operation policy,
 requires that policy to bind main request/target identity without contaminating
 seed-qualification identity, forbids policy redeclaration on resume, rejects public
 main-stage artifact authority, rejects an explicit build goal that would recreate
 the target substrate in a parallel build environment, and poisons a synthetic
-foundation root with compiler residue. It also proves cleanup refuses unmarked or
+foundation root with compiler residue. It also rejects bootstrap product-model,
+pinned foundation-source, and product-qualification drift before resume can
+reinterpret retained transaction authority. It also proves cleanup refuses unmarked or
 misbound workspaces while allowing a marker-bound pre-policy workspace to be
 destroyed without semantic admission. Seed retirement remains explicitly unproven.
 
@@ -109,7 +113,7 @@ Linux host. Important hostile follow-ups include:
 - controller binary replacement after admission;
 - changed build policy after admission;
 - interrupted seed qualification;
-- interrupted foundation construction/check/convergence;
+- interrupted foundation/Stage-B construction/check/convergence;
 - corrupted published artifact before `bootstrap check`; and
 - privilege-context drift.
 
@@ -118,10 +122,13 @@ The current bootstrap manifest must retain the admitted controller closure and s
 
 ```text
 controller-source-lock v1:sha256:<configured-wrap-set-digest>
+product-model seed-assisted-stage-b-gcc-handoff
 foundation-stage seed-assisted-foundation-root-qualified
+construction-handoff-stage seed-assisted-gcc-handoff-qualified
 foundation-operation-policy-profile exact-compatible-sharing
 foundation-profile @foundation
 foundation-members filesystem,glibc,libgcc
+construction-handoff-subject gcc-bootstrap
 seed-execution-root-view v1:sha256:<admitted-seed-root-view>
 seed-retirement-qualified no
 ```
@@ -130,9 +137,9 @@ Bootstrap qualification also requires final glibc to retain
 `usr/share/locale/locale.alias` exactly alongside the sealed `C.UTF-8` locale
 archive, while translated message catalogs remain absent by collection policy.
 
-This is intentional negative evidence. A correctly converged `@foundation` root while
-the S0 seed remains reachable is still not proof that higher construction has ceased
-to depend on that seed. The future seed-retirement test must make S0 inaccessible
+This is intentional negative evidence. A correctly converged `@foundation` root and
+a successfully checked Stage-B GCC handoff while the S0 seed remains reachable are
+still not proof that higher construction has ceased to depend on that seed. The future seed-retirement test must make S0 inaccessible
 before a native construction session and fail on any attempted fallback.
 
 ## Foreign-host controller qualification

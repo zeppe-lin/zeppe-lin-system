@@ -84,9 +84,13 @@ decoding stale product semantics; the marker format and exact workspace binding
 are sufficient deletion authority. Do not add a compatibility decoder merely so
 old workspaces can be cleaned.
 
-A resumed workspace must recover its admitted seed, collection snapshot, build
-policy, foundation operation-policy profile, complete controller source lock and
-controller executable identities. The
+A resumed workspace must recover its exact bootstrap product model, admitted seed,
+collection snapshot, product qualification snapshot, build policy, foundation
+operation-policy profile, complete controller source lock and controller executable
+identities. The current product source must still name the same pinned collection
+revision and qualification bytes. Change the product-model authority whenever
+start-time product semantics such as the admitted goal set change; old private bytes
+then fail closed rather than being reinterpreted by new code. The
 product owns only the opaque complete pkgctl profile selection; it must not copy
 or decode libpkgplan policy vocabulary. Start-only authority is never redeclared
 by the frontend on `pkgctl --resume`; `--max-steps` remains live invocation

@@ -30,6 +30,7 @@ DOMAIN = 'zeppe-lin/system/bootstrap/1'
 HOUSE_UMASK = '0022'
 OUTPUT_LAYOUT = 'package-root'
 FOUNDATION_OPERATION_PROFILE = 'exact-compatible-sharing'
+BOOTSTRAP_PRODUCT_MODEL = 'seed-assisted-stage-b-gcc-handoff'
 EXPECTED_PKGCTL_VERSION = '0.43.0'
 HEX40 = re.compile(r'^[0-9a-f]{40}$')
 HEX64 = re.compile(r'^[0-9a-f]{64}$')
@@ -53,11 +54,14 @@ SEED_ROOT_DIRS = (
     ('tmp', 0o1777),
 )
 EXPECTED_ARTIFACTS = (
-    'filesystem', 'glibc', 'glibc-bootstrap', 'libgcc',
-    'linux-api-headers',
+    'binutils-bootstrap', 'filesystem', 'gcc-bootstrap', 'glibc',
+    'glibc-bootstrap', 'gmp-bootstrap', 'libgcc', 'linux-api-headers',
+    'mpc-bootstrap', 'mpfr-bootstrap',
 )
 FOUNDATION_MEMBERS = ('filesystem', 'glibc', 'libgcc')
 FOUNDATION_STAGE = 'seed-assisted-foundation-root-qualified'
+CONSTRUCTION_HANDOFF_STAGE = 'seed-assisted-gcc-handoff-qualified'
+CONSTRUCTION_HANDOFF_SUBJECT = 'gcc-bootstrap'
 SEED_RETIREMENT_QUALIFIED = False
 EXPECTED_PACKAGE_COORDINATES = {
     'filesystem': ('1.0.0', '1'),
@@ -65,6 +69,11 @@ EXPECTED_PACKAGE_COORDINATES = {
     'glibc-bootstrap': ('2.44', '1'),
     'libgcc': ('16.1.0', '1'),
     'linux-api-headers': ('7.1.8', '1'),
+    'gmp-bootstrap': ('6.3.0', '1'),
+    'mpfr-bootstrap': ('4.2.2', '1'),
+    'mpc-bootstrap': ('1.4.1', '1'),
+    'binutils-bootstrap': ('2.44', '1'),
+    'gcc-bootstrap': ('16.1.0', '4'),
 }
 
 
@@ -191,6 +200,7 @@ def nonce_for(domain: str, marker: Mapping[str, object]) -> str:
         marker['seed']['sha256'],
         marker['foundation']['revision'],
         marker['qualification']['sha256'],
+        marker['product_model'],
         policy['parallelism'],
         policy['source_date_epoch'],
         policy['file_creation_mask'],
@@ -576,6 +586,8 @@ def _read_workspace_marker(workspace: Path) -> dict[str, object]:
 
 def load_marker(workspace: Path) -> dict[str, object]:
     marker = _read_workspace_marker(workspace)
+    if marker.get('product_model') != BOOTSTRAP_PRODUCT_MODEL:
+        raise BootstrapError('bootstrap workspace product model is incompatible')
     _foundation_operation_profile(marker)
     return marker
 
@@ -687,8 +699,10 @@ def _validate_foundation_root_scope(root: Path) -> None:
             raise BootstrapError(
                 f'foundation managed root topology differs: {relative}')
     for relative in (
-            'usr/bin/bash', 'usr/bin/gcc', 'usr/bin/make',
-            'usr/include/linux/types.h', 'usr/libexec/runtime-cohort-probe',
+            'usr/bin/bash', 'usr/bin/gcc', 'usr/bin/g++', 'usr/bin/as',
+            'usr/bin/ld', 'usr/bin/make', 'usr/include/gmp.h',
+            'usr/include/mpfr.h', 'usr/include/mpc.h', 'usr/include/linux/types.h',
+            'usr/lib/libstdc++.a', 'usr/libexec/runtime-cohort-probe',
             'runtime-cohort.ok'):
         if (root / relative).exists():
             raise BootstrapError(
@@ -770,6 +784,7 @@ def _start_pkgctl_args(
         args += [
             '--goal', 'run=@foundation',
             '--goal', 'check=libgcc',
+            '--goal', f'check={CONSTRUCTION_HANDOFF_SUBJECT}',
             '--prefer-catalog',
             '--converge-exact',
             '--operation-policy', _foundation_operation_profile(marker),
@@ -904,6 +919,20 @@ def _validate_controller_release(context: BuildContext) -> None:
 
 def _validate_controller(context: BuildContext, marker: Mapping[str, object]) -> None:
     _validate_controller_release(context)
+    if marker.get('product_model') != BOOTSTRAP_PRODUCT_MODEL:
+        raise BootstrapError('bootstrap workspace product model differs from current product authority')
+    current_foundation = load_foundation_descriptor(context.source_root)
+    retained_foundation = marker.get('foundation')
+    if not isinstance(retained_foundation, dict) or \
+            retained_foundation.get('url') != current_foundation.url or \
+            retained_foundation.get('revision') != current_foundation.revision:
+        raise BootstrapError('foundation source authority differs from current product authority')
+    current_qualification = sha256_tree(
+        context.source_root / 'products' / 'bootstrap' / 'qualification' / 'collection')
+    retained_qualification = marker.get('qualification')
+    if not isinstance(retained_qualification, dict) or \
+            retained_qualification.get('sha256') != current_qualification:
+        raise BootstrapError('bootstrap qualification authority differs from current product authority')
     controller = marker.get('controller')
     if not isinstance(controller, dict):
         raise BootstrapError('bootstrap workspace controller authority is incomplete')
@@ -1046,6 +1075,7 @@ def _initialize_attempt(context: BuildContext, options: BootstrapOptions) -> dic
     uid, gid, groups = supervisor_credentials(privilege)
     marker: dict[str, object] = {
         'format': WORKSPACE_FORMAT,
+        'product_model': BOOTSTRAP_PRODUCT_MODEL,
         'workspace': str(workspace),
         'seed': {
             'descriptor': seed.file_name,
@@ -1218,6 +1248,7 @@ def check(context: BuildContext, options: BootstrapOptions) -> Path:
     manifest = workspace / 'bootstrap.manifest'
     lines = [
         f'format {MANIFEST_FORMAT}',
+        f'product-model {marker["product_model"]}',
         f'seed-descriptor {marker["seed"]["descriptor"]}',
         f'seed-sha256 {marker["seed"]["sha256"]}',
         f'foundation-revision {marker["foundation"]["revision"]}',
@@ -1232,8 +1263,10 @@ def check(context: BuildContext, options: BootstrapOptions) -> Path:
         f'build-policy-output-layout {marker["build_policy"]["output_layout"]}',
         f'foundation-operation-policy-profile {_foundation_operation_profile(marker)}',
         f'foundation-stage {FOUNDATION_STAGE}',
+        f'construction-handoff-stage {CONSTRUCTION_HANDOFF_STAGE}',
         'foundation-profile @foundation',
         f'foundation-members {",".join(FOUNDATION_MEMBERS)}',
+        f'construction-handoff-subject {CONSTRUCTION_HANDOFF_SUBJECT}',
         f'foundation-managed-target {identity_for("managed-target", marker)}',
         f'foundation-state-store {identity_for("state-store", marker)}',
         f'foundation-root-view {identity_for("root-view", marker)}',
@@ -1287,6 +1320,11 @@ def check(context: BuildContext, options: BootstrapOptions) -> Path:
             'usr/lib/ld-linux-x86-64.so.2',
         ),
         'libgcc': ('usr/lib/libgcc_s.so.1',),
+        'gmp-bootstrap': ('usr/include/gmp.h', 'usr/lib/libgmp.a'),
+        'mpfr-bootstrap': ('usr/include/mpfr.h', 'usr/lib/libmpfr.a'),
+        'mpc-bootstrap': ('usr/include/mpc.h', 'usr/lib/libmpc.a'),
+        'binutils-bootstrap': ('usr/bin/as', 'usr/bin/ld', 'usr/bin/readelf'),
+        'gcc-bootstrap': ('usr/bin/gcc', 'usr/bin/g++', 'usr/lib/libstdc++.a'),
     }
     paths = {name: Path(record['path']) for name, record in artifacts.items()}
     for package, members in required_members.items():
@@ -1352,7 +1390,7 @@ def run(context: BuildContext, options: BootstrapOptions) -> Path:
     _run_until_terminal(
         context, marker, qualification=True,
         maximum_steps=options.maximum_steps, privilege=privilege)
-    print('bootstrap: constructing/checking and converging @foundation')
+    print('bootstrap: constructing/checking @foundation and Stage-B GCC handoff')
     _run_until_terminal(
         context, marker, qualification=False,
         maximum_steps=options.maximum_steps, privilege=privilege)

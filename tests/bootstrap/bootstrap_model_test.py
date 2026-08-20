@@ -34,14 +34,31 @@ def main() -> None:
         fail('foundation descriptor does not load')
     if bootstrap.EXPECTED_PACKAGE_COORDINATES.get('glibc') != ('2.44', '6'):
         fail('bootstrap model does not require the filesystem-bound glibc release')
+    expected_handoff_coordinates = {
+        'gmp-bootstrap': ('6.3.0', '1'),
+        'mpfr-bootstrap': ('4.2.2', '1'),
+        'mpc-bootstrap': ('1.4.1', '1'),
+        'binutils-bootstrap': ('2.44', '1'),
+        'gcc-bootstrap': ('16.1.0', '4'),
+    }
+    for package, coordinate in expected_handoff_coordinates.items():
+        if bootstrap.EXPECTED_PACKAGE_COORDINATES.get(package) != coordinate:
+            fail(f'bootstrap model handoff coordinate differs: {package}')
     if bootstrap.FOUNDATION_STAGE != 'seed-assisted-foundation-root-qualified':
         fail('bootstrap model misstates the current foundation stage')
+    if bootstrap.CONSTRUCTION_HANDOFF_STAGE != 'seed-assisted-gcc-handoff-qualified':
+        fail('bootstrap model misstates the current construction handoff stage')
+    if bootstrap.BOOTSTRAP_PRODUCT_MODEL != 'seed-assisted-stage-b-gcc-handoff':
+        fail('bootstrap product model does not close Stage-B semantics')
     if bootstrap.FOUNDATION_MEMBERS != ('filesystem', 'glibc', 'libgcc'):
         fail('bootstrap model foundation membership differs from @foundation authority')
     if bootstrap.EXPECTED_ARTIFACTS != (
-            'filesystem', 'glibc', 'glibc-bootstrap', 'libgcc',
-            'linux-api-headers'):
-        fail('bootstrap model retains a duplicate/probe construction closure')
+            'binutils-bootstrap', 'filesystem', 'gcc-bootstrap', 'glibc',
+            'glibc-bootstrap', 'gmp-bootstrap', 'libgcc', 'linux-api-headers',
+            'mpc-bootstrap', 'mpfr-bootstrap'):
+        fail('bootstrap model does not require the exact Stage-B construction artifact set')
+    if bootstrap.CONSTRUCTION_HANDOFF_SUBJECT != 'gcc-bootstrap':
+        fail('bootstrap construction handoff subject differs')
     if bootstrap.SEED_RETIREMENT_QUALIFIED:
         fail('bootstrap model claims seed retirement before the hostile gate exists')
     for required_runtime in (
@@ -57,13 +74,17 @@ def main() -> None:
     if seed.architecture != 'x86_64' or len(seed.sha256) != 64:
         fail('default seed descriptor does not load')
 
+    qualification_sha = bootstrap.sha256_tree(
+        root / 'products' / 'bootstrap' / 'qualification' / 'collection')
     marker = {
+        'product_model': bootstrap.BOOTSTRAP_PRODUCT_MODEL,
         'seed': {'sha256': seed.sha256},
         'foundation': {
+            'url': foundation.url,
             'revision': foundation.revision,
             'target_root': '/tmp/bootstrap-workspace/main/foundation-root',
         },
-        'qualification': {'sha256': '1' * 64},
+        'qualification': {'sha256': qualification_sha},
         'operation_policy_profile': bootstrap.FOUNDATION_OPERATION_PROFILE,
         'build_policy': {
             'parallelism': 7,
@@ -86,13 +107,19 @@ def main() -> None:
     marker['qualification']['sha256'] = '2' * 64
     if bootstrap.seed_execution_root_view_identity(marker) != seed_execution_root_view:
         fail('qualification authority contaminates historical seed root-view identity')
-    marker['qualification']['sha256'] = '1' * 64
+    marker['qualification']['sha256'] = qualification_sha
     original_seed_sha = marker['seed']['sha256']
     marker['seed']['sha256'] = '3' * 64
     if bootstrap.seed_execution_root_view_identity(marker) == seed_execution_root_view:
         fail('historical seed bytes do not contribute to seed root-view identity')
     marker['seed']['sha256'] = original_seed_sha
 
+    main_nonce = bootstrap.nonce_for('foundation-root', marker)
+    admitted_product_model = marker['product_model']
+    marker['product_model'] = 'foreign-bootstrap-model'
+    if bootstrap.nonce_for('foundation-root', marker) == main_nonce:
+        fail('bootstrap product model does not contribute to request identity')
+    marker['product_model'] = admitted_product_model
     main_nonce = bootstrap.nonce_for('foundation-root', marker)
     marker['build_policy']['parallelism'] = 11
     if bootstrap.nonce_for('foundation-root', marker) == main_nonce:
@@ -168,6 +195,39 @@ def main() -> None:
             'a' * 64 if Path(path) == context.pkgctl else 'b' * 64)
         bootstrap._validate_controller(context, marker)
 
+        admitted_product_model = marker['product_model']
+        marker['product_model'] = 'obsolete-bootstrap-model'
+        try:
+            bootstrap._validate_controller(context, marker)
+        except bootstrap.BootstrapError as error:
+            if 'product model differs from current product authority' not in str(error):
+                fail(f'product-model drift refusal is opaque: {error}')
+        else:
+            fail('workspace admitted under another bootstrap product model remained resumable')
+        marker['product_model'] = admitted_product_model
+
+        admitted_foundation_revision = marker['foundation']['revision']
+        marker['foundation']['revision'] = 'f' * 40
+        try:
+            bootstrap._validate_controller(context, marker)
+        except bootstrap.BootstrapError as error:
+            if 'foundation source authority differs from current product authority' not in str(error):
+                fail(f'foundation-source drift refusal is opaque: {error}')
+        else:
+            fail('workspace admitted under another foundation revision remained resumable')
+        marker['foundation']['revision'] = admitted_foundation_revision
+
+        admitted_qualification_sha = marker['qualification']['sha256']
+        marker['qualification']['sha256'] = 'e' * 64
+        try:
+            bootstrap._validate_controller(context, marker)
+        except bootstrap.BootstrapError as error:
+            if 'bootstrap qualification authority differs from current product authority' not in str(error):
+                fail(f'qualification-source drift refusal is opaque: {error}')
+        else:
+            fail('workspace admitted under another product qualification remained resumable')
+        marker['qualification']['sha256'] = admitted_qualification_sha
+
         admitted_source_lock = marker['controller']['source_lock']
         marker['controller']['source_lock'] = 'v1:sha256:' + '0' * 64
         try:
@@ -202,7 +262,7 @@ def main() -> None:
     if qualification_args[1] != 'build':
         fail('seed qualification lost the restricted build frontend')
     expected_goals = {
-        'run=@foundation', 'check=libgcc',
+        'run=@foundation', 'check=libgcc', 'check=gcc-bootstrap',
     }
     observed_goals = {
         start_args[index + 1]
@@ -309,7 +369,7 @@ def main() -> None:
     if bootstrap.identity_for('managed-target', marker) == old_identity:
         fail('qualification authority does not contribute to target binding')
 
-    marker['qualification']['sha256'] = '1' * 64
+    marker['qualification']['sha256'] = qualification_sha
     marker['operation_policy_profile'] = 'strict-exclusive'
     try:
         bootstrap._foundation_operation_profile(marker)
@@ -523,13 +583,20 @@ artifact.0.sha256 abc
         finally:
             bootstrap.run_command = original_run_command
 
-        (foundation_root / 'usr/bin/gcc').write_text('poison\n', encoding='utf-8')
-        try:
-            bootstrap._validate_foundation_root_scope(foundation_root)
-        except bootstrap.BootstrapError:
-            pass
-        else:
-            fail('foundation managed root admitted seed/toolchain residue')
+        for relative in (
+                'usr/bin/gcc', 'usr/bin/g++', 'usr/bin/as', 'usr/bin/ld',
+                'usr/include/gmp.h', 'usr/include/mpfr.h', 'usr/include/mpc.h',
+                'usr/include/linux/types.h', 'usr/lib/libstdc++.a'):
+            poison = foundation_root / relative
+            poison.parent.mkdir(parents=True, exist_ok=True)
+            poison.write_text('poison\n', encoding='utf-8')
+            try:
+                bootstrap._validate_foundation_root_scope(foundation_root)
+            except bootstrap.BootstrapError:
+                pass
+            else:
+                fail(f'foundation managed root admitted construction residue: {relative}')
+            poison.unlink()
 
         unmarked_workspace = temp / 'unmarked-bootstrap'
         unmarked_workspace.mkdir()
@@ -551,6 +618,13 @@ artifact.0.sha256 abc
             'format': bootstrap.WORKSPACE_FORMAT,
             'workspace': str(stale_workspace),
         })
+        try:
+            bootstrap.load_marker(stale_workspace)
+        except bootstrap.BootstrapError as error:
+            if 'product model is incompatible' not in str(error):
+                fail(f'obsolete product-model refusal is opaque: {error}')
+        else:
+            fail('obsolete marker remained semantically resumable')
         bootstrap.clean(
             context, bootstrap.BootstrapOptions(workspace=stale_workspace))
         if stale_workspace.exists():

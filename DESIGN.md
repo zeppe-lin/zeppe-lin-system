@@ -112,10 +112,11 @@ signing-key trust boundary first.
 
 ## Bootstrap product
 
-The current bootstrap product composes the first managed `@foundation` root
-without broadening into native toolchain construction. It consumes the
-seed-retirement-oriented `pkgsrc-foundation` boundary, but this stage remains
-explicitly seed-assisted: the historical seed still supplies construction tools.
+The current bootstrap product composes the first managed `@foundation` root and
+executes the bounded Stage-B compiler-handoff sensor already admitted by
+`pkgsrc-foundation`. It does not yet promote that sensor into a construction root.
+This stage remains explicitly seed-assisted: the historical seed still supplies
+construction and lifecycle execution authority.
 
 It has two package catalogs:
 
@@ -145,7 +146,8 @@ execution before it accepts the result.
 
 The first transaction checks the historical seed execution closure. The second is
 one mixed native `pkgctl run` transaction. It constructs the exact target
-foundation closure and checks the final libgcc selection:
+foundation closure, checks the final libgcc selection, and constructs/checks the
+Stage-B GCC handoff:
 
 ```text
 linux-api-headers -> glibc
@@ -153,6 +155,12 @@ linux-api-headers -> glibc-bootstrap -> libgcc
 filesystem -> glibc <-> libgcc                       (run cohort)
 filesystem + glibc(release 6, C.UTF-8) + libgcc      (@foundation)
                                            `-> check libgcc
+
+glibc -> gmp-bootstrap -> mpfr-bootstrap -> mpc-bootstrap
+   `--> binutils-bootstrap
+filesystem + glibc + linux-api-headers + GMP/MPFR/MPC --build--> gcc-bootstrap
+filesystem + glibc + linux-api-headers + binutils-bootstrap --check/run--> gcc-bootstrap
+                                                              `-> check gcc-bootstrap
 ```
 
 Dependency closure is resolved by the native package stack. Final glibc's
@@ -161,13 +169,15 @@ interpreter topology; `libpkgtransaction` 4.1.0 lifts that crossing requirement
 across the complete glibc/libgcc runtime cohort, so the system frontend does not
 encode cohort scheduling folklore. The transaction selects `run=@foundation`
 with exact convergence into `main/foundation-root`,
-`check=libgcc` against the same target selection, and the complete pkgctl
+`check=libgcc` against the same target selection, `check=gcc-bootstrap` as a
+construction-only handoff witness, and the complete pkgctl
 `exact-compatible-sharing` operation-policy profile. `zeppe-lin-system` owns only
 that product-level profile selection; planner policy fields and their codec remain
 outside this repository. The transaction does not introduce a second explicit
-build/check root for the finished substrate. Construction-only graph
-nodes are retained as artifacts/evidence but are not desired installed state. The
-system frontend does not order packages or hand-extract archives for application.
+build/check root for the finished substrate. Construction-only graph nodes—including the arithmetic/Binutils/GCC handoff—are
+retained as artifacts/evidence but are not desired installed state. The system
+frontend does not order packages, synthesize a construction profile, or hand-extract
+archives for application.
 
 
 ### Foundation stage and seed retirement
@@ -175,12 +185,14 @@ system frontend does not order packages or hand-extract archives for application
 The current product result is a **seed-assisted qualified foundation root**, not a
 claim that the bootstrap parent has been retired. `@foundation` names the stable
 deployable substrate (`filesystem`, final `glibc`, and `libgcc`), while
-construction-only recipes such as `linux-api-headers` and `glibc-bootstrap`
-remain graph nodes/artifacts rather than desired installed state.
+construction-only recipes such as `linux-api-headers`, `glibc-bootstrap`, the
+GMP/MPFR/MPC chain, `binutils-bootstrap`, and `gcc-bootstrap` remain graph
+nodes/artifacts rather than desired installed state.
 
-The main transaction converges that exact profile into a private managed target and
-retains its construction artifacts beneath the run-private runtime hierarchy. It
-still executes construction/lifecycle authority from the admitted historical seed.
+The main transaction converges that exact profile into a private managed target,
+constructs/checks the Stage-B GCC handoff, and retains all construction artifacts
+beneath the run-private runtime hierarchy. It still executes construction/lifecycle
+authority from the admitted historical seed.
 The S0 execution root is named independently from the managed target: its opaque
 root-view identity is derived from the exact admitted seed archive plus the
 product-owned execution-root layout. BUILD/CHECK and lifecycle retain that same S0
@@ -189,17 +201,24 @@ physical root coordinates and cannot redeclare either semantic identity. Therefo
 `bootstrap.manifest` records:
 
 ```text
+product-model seed-assisted-stage-b-gcc-handoff
 foundation-stage seed-assisted-foundation-root-qualified
+construction-handoff-stage seed-assisted-gcc-handoff-qualified
 foundation-operation-policy-profile exact-compatible-sharing
 foundation-profile @foundation
 foundation-members filesystem,glibc,libgcc
+construction-handoff-subject gcc-bootstrap
 seed-execution-root-view v1:sha256:<admitted-seed-root-view>
 seed-retirement-qualified no
 ```
 
-The later seed-retirement milestone must compose exact native construction
-authority, revoke access to the historical seed, and successfully continue
-construction. Only that hostile transition may change `seed-retirement-qualified` to `yes`.
+The Stage-B success is deliberately weaker than construction-root promotion. The
+collection still publishes no `@construction` profile, and the managed foundation
+root must reject all Stage-B-only payload residue. The later seed-retirement
+milestone must first complete the required shell/base-tool/interpreter closure,
+compose exact native construction authority, freeze that root, revoke access to
+the historical seed, and successfully continue a **new** construction transaction.
+Only that hostile transition may change `seed-retirement-qualified` to `yes`.
 Directory presence or successful execution while S0 remains reachable is not
 seed-retirement evidence.
 
@@ -209,6 +228,7 @@ A bootstrap workspace is private durable product authority. At initialization
 it retains:
 
 ```text
+exact bootstrap product-model authority
 seed descriptor and verified archive identity
 foundation Git revision, private snapshot and managed-root coordinate
 qualification snapshot digest
@@ -223,7 +243,7 @@ private seed-root coordinate
 ```
 
 Command nonces and state-target identities are domain-separated from those
-values. Build policy contributes to the start nonce. The foundation operation
+values. The product model and build policy contribute to the start nonce. The foundation operation
 policy contributes to main transaction nonces and target/state identities but
 does not contaminate the build-only seed-qualification identities. The controller
 source lock is restart/admission authority only; it does not enter package target
@@ -253,14 +273,14 @@ bootstrap product. `zlsystem bootstrap check` independently:
 
 - requires successfully terminal seed qualification and mixed foundation transactions;
 - verifies the seed-probe artifact retained by qualification;
-- requires exactly the five expected retained construction artifacts;
+- requires exactly the ten expected retained construction artifacts, including the Stage-B GCC handoff;
 - re-hashes every private run archive against retained controller evidence;
-- checks critical package members;
+- checks critical foundation and Stage-B handoff package members;
 - verifies final glibc package coordinates, usable `C.UTF-8` locale authority, and
   retained `locale.alias`;
 - rejects a public main-stage artifact root, verifies selected
-  libc/locale/locale-alias/libgcc bytes
-  in the managed foundation root, and rejects obvious seed/build-only residue;
+  libc/locale/locale-alias/libgcc bytes in the managed foundation root, and rejects
+  seed/build-only plus GCC/Binutils/arithmetic handoff residue;
 - verifies final libgcc SONAME/dependencies and absence of RPATH/RUNPATH;
 - realizes filesystem/glibc/libgcc package trees from retained archives without
   treating realization residue as evidence;

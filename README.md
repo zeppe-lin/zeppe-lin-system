@@ -13,7 +13,7 @@ The current `0.1.x` milestone provides two surfaces:
 
 ```text
 controller    exact pkgctl + pkgstate-init build
-bootstrap     historical seed qualification + final runtime cohort construction
+bootstrap     historical seed qualification + foundation/GCC handoff construction
 ```
 
 ## Build the controller
@@ -78,25 +78,31 @@ On a new workspace it:
 7. admits and runs the checked `seed-probe` transaction;
 8. admits one mixed native transaction under the complete
    `exact-compatible-sharing` target-operation policy, converges exact `@foundation`
-   membership into the private `main/foundation-root`, and checks the same target
-   `libgcc` selection; and
-9. independently re-hashes the five retained construction artifacts, verifies the
-   managed foundation root against selected artifact bytes, usable `C.UTF-8`,
-   retained `locale.alias`, and managed libc/libgcc loadability, then emits
+   membership into the private `main/foundation-root`, checks the same target
+   `libgcc` selection, and constructs/checks the bounded Stage-B `gcc-bootstrap`
+   handoff with its exact arithmetic/Binutils prerequisites; and
+9. independently re-hashes the ten retained construction artifacts, verifies the
+   sealed handoff capability surfaces, proves construction-only Stage-B bytes did
+   not enter the managed foundation root, verifies usable `C.UTF-8`, retained
+   `locale.alias`, and managed libc/libgcc loadability, then emits
    `bootstrap.manifest`.
 
 
-The current bootstrap is deliberately **seed-assisted**. It now composes the stable
+The current bootstrap is deliberately **seed-assisted**. It composes the stable
 `@foundation` substrate (`filesystem`, final `glibc`, `libgcc`) into a real managed
-root, but construction and lifecycle execution authority for this transaction still
-comes from the admitted historical seed. That S0 execution root has its own
+root and now also constructs/checks the bounded GCC handoff sensor from the pinned
+Stage-B collection, but construction and lifecycle execution authority for the
+transaction still comes from the admitted historical seed. That S0 execution root has its own
 opaque root-view identity, admitted from the exact seed bytes plus product-owned
 execution-root layout; it is not inferred from the managed target root. BUILD/CHECK
 and lifecycle bind that same S0 identity in distinct controller authority slots.
 The manifest therefore records
-`foundation-stage seed-assisted-foundation-root-qualified` and
-`seed-retirement-qualified no`. A later hostile seed-retirement gate, not root
-composition itself, owns the transition to seed-free construction.
+`foundation-stage seed-assisted-foundation-root-qualified`,
+`construction-handoff-stage seed-assisted-gcc-handoff-qualified`, and
+`seed-retirement-qualified no`. The exact construction artifacts are qualification evidence, not a prematurely
+named `@construction` profile or membership set. A later hostile seed-retirement
+gate, not successful S0-assisted compiler construction, owns the transition to
+seed-free construction.
 
 The product workspace defaults to `build/products/bootstrap`. Start-only
 authority is retained there. Later operations do not require the operator to

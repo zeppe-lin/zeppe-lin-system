@@ -2,6 +2,16 @@
 
 ## 0.1.0 — unreleased
 
+- Advance `pkgsrc-foundation` to the admitted Stage-B GCC handoff boundary and
+  make the real S0-assisted main transaction construct/check that compiler
+  sensor alongside exact `@foundation` convergence. The product now requires
+  the exact ten retained construction artifacts while independently refusing
+  GCC/Binutils/GMP/MPFR/MPC residue in the managed foundation root. This is
+  handoff qualification only: no `@construction` profile/root is admitted and
+  seed retirement remains explicitly unqualified. Retain an exact bootstrap
+  product-model authority and fail resume/check closed when that model, the
+  pinned foundation revision, or product qualification source differs; obsolete
+  marker-bound workspaces remain deletion-only cleanable.
 - Advance the terminal controller to `pkgctl` 0.43.0 and add `libpkgobject`
   0.1.0 to the exact wrapped controller closure. Force the new dependency to
   its pinned fallback so an ambient installed package-object provider cannot
