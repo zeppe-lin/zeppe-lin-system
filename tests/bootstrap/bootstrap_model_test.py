@@ -51,6 +51,8 @@ def main() -> None:
             fail(f'mixed run runtime omits required private hierarchy: {required_runtime}')
     if 'application-checkpoints' in bootstrap.RUNTIME_DIRS:
         fail('bootstrap runtime resurrected retired application checkpoint authority')
+    if 'package-objects' in bootstrap.RUNTIME_DIRS:
+        fail('durable package-object availability was nested under private runtime cleanup')
     seed = bootstrap.load_seed_descriptor(root, None)
     if seed.architecture != 'x86_64' or len(seed.sha256) != 64:
         fail('default seed descriptor does not load')
@@ -219,6 +221,38 @@ def main() -> None:
         fail('mixed run exposes construction artifacts as build-frontend authority')
     if '--artifact-root' not in qualification_args:
         fail('seed qualification lost its explicit public artifact root')
+    for args, expected_store, label in (
+            (start_args, '/tmp/bootstrap-workspace/main/package-objects', 'main start'),
+            (resume_args, '/tmp/bootstrap-workspace/main/package-objects', 'main resume'),
+            (qualification_args, '/tmp/bootstrap-workspace/qualification/package-objects',
+             'qualification start')):
+        if args.count('--package-object-store') != 1:
+            fail(f'{label} does not carry exactly one current package-object provider')
+        store_index = args.index('--package-object-store')
+        if args[store_index + 1] != expected_store:
+            fail(f'{label} package-object provider escaped its product stage')
+    def option_path(args: list[str], option: str) -> Path:
+        return Path(args[args.index(option) + 1])
+
+    def paths_overlap(first: Path, second: Path) -> bool:
+        return first == second or first in second.parents or second in first.parents
+
+    for args, root_options, label in (
+            (start_args, ('--canonical-store', '--runtime-root', '--build-root',
+                          '--lifecycle-root', '--target-root'), 'main start'),
+            (qualification_args, ('--canonical-store', '--runtime-root', '--build-root',
+                                  '--artifact-root'), 'qualification start')):
+        store = option_path(args, '--package-object-store')
+        for option in root_options:
+            authority = option_path(args, option)
+            if paths_overlap(store, authority):
+                fail(f'{label} package-object provider overlaps {option} authority')
+    qualification_resume_args = bootstrap._resume_pkgctl_args(
+        context, marker, qualification=True, maximum_steps=8)
+    q_store = qualification_resume_args.index('--package-object-store')
+    if qualification_resume_args[q_store + 1] != \
+            '/tmp/bootstrap-workspace/qualification/package-objects':
+        fail('qualification resume does not reacquire its current package-object provider')
     policy_index = start_args.index('--operation-policy')
     if start_args[policy_index + 1] != bootstrap.FOUNDATION_OPERATION_PROFILE:
         fail('mixed run does not select the admitted complete operation-policy profile')

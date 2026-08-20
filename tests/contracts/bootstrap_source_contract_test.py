@@ -69,6 +69,11 @@ def main() -> None:
         fail('pkgctl execution root-view options do not receive raw SHA-256 digests')
     if "return f'v1:sha256:{seed_execution_root_view_digest(marker)}'" not in product_sources:
         fail('system evidence does not retain typed seed execution root-view identity')
+    if "return base / 'package-objects'" not in product_sources or \
+            "'--package-object-store', _package_object_store(base)" not in product_sources:
+        fail('bootstrap does not bind the current package-object provider outside retained semantics')
+    if "'package_object_store':" in product_sources:
+        fail('bootstrap elevated the current package-object pathname into retained product semantics')
     for root_view_option in ('--build-root-view', '--lifecycle-root-view'):
         if root_view_option not in product_sources:
             fail(f'bootstrap start omits explicit execution root-view authority: {root_view_option}')

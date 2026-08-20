@@ -30,7 +30,7 @@ DOMAIN = 'zeppe-lin/system/bootstrap/1'
 HOUSE_UMASK = '0022'
 OUTPUT_LAYOUT = 'package-root'
 FOUNDATION_OPERATION_PROFILE = 'exact-compatible-sharing'
-EXPECTED_PKGCTL_VERSION = '0.42.2'
+EXPECTED_PKGCTL_VERSION = '0.43.0'
 HEX40 = re.compile(r'^[0-9a-f]{40}$')
 HEX64 = re.compile(r'^[0-9a-f]{64}$')
 RUNTIME_DIRS = (
@@ -728,6 +728,10 @@ def _validate_foundation_runtime(context: BuildContext, root: Path) -> None:
             'foundation libgcc lacks the unwind entry point used by native consumers')
 
 
+def _package_object_store(base: Path) -> Path:
+    return base / 'package-objects'
+
+
 def _start_pkgctl_args(
     context: BuildContext,
     marker: Mapping[str, object],
@@ -758,6 +762,7 @@ def _start_pkgctl_args(
         ]
     args += collections
     args += [
+        '--package-object-store', _package_object_store(base),
         '--build-architecture', 'x86_64',
         '--target-architecture', 'x86_64',
     ]
@@ -807,6 +812,7 @@ def _resume_pkgctl_args(
         context.pkgctl, 'build' if qualification else 'run',
         '--canonical-store', base / 'state',
         '--resume', nonce,
+        '--package-object-store', _package_object_store(base),
         '--runtime-root', base / 'runtime',
         '--build-root', root,
     ]
@@ -1091,6 +1097,7 @@ def _initialize_attempt(context: BuildContext, options: BootstrapOptions) -> dic
     for name in ('qualification', 'main'):
         base = workspace / name
         (base / 'runtime').mkdir(parents=True, exist_ok=True)
+        (base / 'package-objects').mkdir(parents=True, exist_ok=True)
         for directory in RUNTIME_DIRS:
             (base / 'runtime' / directory).mkdir(parents=True, exist_ok=True)
         if name == 'qualification':

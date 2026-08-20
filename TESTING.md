@@ -30,7 +30,7 @@ absence.
 
 ## Contract suite
 
-`source-lock` requires the exact 35-project controller closure, canonical GitHub
+`source-lock` requires the exact 36-project controller closure, canonical GitHub
 URLs, exact revisions and codec providers.
 
 `controller-boundary` requires host dependency qualification, pinned fallback
@@ -50,7 +50,12 @@ the gap where `.wrap` text could be current while an existing Meson fallback tre
 remained old.
 
 `wrapped-pkgctl-start` requires the composed build-tree terminal controller to
-report exactly `pkgctl 0.42.2`; a merely executable stale binary is not sufficient.
+report exactly `pkgctl 0.43.0`; a merely executable stale binary is not sufficient.
+The same source-lock/controller contracts require `libpkgobject` 0.1.0 as an
+exact wrap and as a forced fallback dependency, so an installed provider cannot
+silently satisfy the new pkgctl edge. Bootstrap model qualification also requires
+distinct qualification/main `package-objects` roots outside `RUNTIME_DIRS`, and
+requires start/resume to reacquire those current provider coordinates.
 `wrapped-isolation` is the privilege-sensitive mechanism gate described above.
 
 `seed-descriptors` requires closed seed vocabulary, canonical release authority,

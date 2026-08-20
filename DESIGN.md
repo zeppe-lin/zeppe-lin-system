@@ -30,7 +30,7 @@ The controller is one Meson graph built from exact repository commits recorded
 in `subprojects/*.wrap`. All provided `libpkg*` dependency names are listed in
 `force_fallback_for`, so an installed library cannot satisfy a wrapped edge.
 
-The recursive closure contains 35 projects including `pkgctl`.
+The recursive closure contains 36 projects including `pkgctl`.
 `libpkgstate-posix` and `pkgctl` are explicit terminal subprojects because the
 system frontend consumes their executable target objects. The remaining
 libraries are admitted through normal Meson dependency fallback and
@@ -50,6 +50,14 @@ than relying only on terminal executable digests.
 
 `libpkgsource` and `libpkgcatalog` each provide both their library and codec
 dependency name. Those aliases are part of the source lock.
+
+`libpkgobject` is part of that same pinned controller closure. Its product-use
+path is different from semantic package/state authority: each bootstrap stage
+owns a durable `package-objects` reservoir beside, not beneath, its private
+runtime root. `pkgctl` receives that pathname as current resource availability
+on start and resume; the complete controller source lock pins which provider
+implementation is allowed, while canonical package state remains authority for
+which exact artifact content/image was admitted.
 
 The controller build never recreates the old development feedback loop:
 

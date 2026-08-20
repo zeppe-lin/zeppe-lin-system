@@ -5,7 +5,7 @@ project(
   license: 'GPL-3.0-or-later',
   meson_version: '>=1.8.3',
   default_options: [
-    'force_fallback_for=libpkgapply,libpkgapply-exec,libpkgapply-posix,libpkgaudit,libpkgbuild,libpkgbuild-exec,libpkgbuild-image,libpkgbuild-plan,libpkgcatalog,libpkgcatalog-acquire,libpkgcatalog-codec,libpkgcheck,libpkgcheck-exec,libpkgexec,libpkgexec-linux,libpkgfetch,libpkgimage,libpkgimage-exec,libpkgplan,libpkgreconcile,libpkgreconcile-apply,libpkgreconcile-apply-posix,libpkgreconcile-posix,libpkgresolve,libpkgsource,libpkgsource-codec,libpkgsource-exec,libpkgsource-plan,libpkgsource-yaml,libpkgstate,libpkgstate-apply,libpkgstate-build,libpkgstate-plan,libpkgstate-posix,libpkgstate-source,libpkgtransaction',
+    'force_fallback_for=libpkgapply,libpkgapply-exec,libpkgapply-posix,libpkgaudit,libpkgbuild,libpkgbuild-exec,libpkgbuild-image,libpkgbuild-plan,libpkgcatalog,libpkgcatalog-acquire,libpkgcatalog-codec,libpkgcheck,libpkgcheck-exec,libpkgexec,libpkgexec-linux,libpkgfetch,libpkgimage,libpkgimage-exec,libpkgobject,libpkgplan,libpkgreconcile,libpkgreconcile-apply,libpkgreconcile-apply-posix,libpkgreconcile-posix,libpkgresolve,libpkgsource,libpkgsource-codec,libpkgsource-exec,libpkgsource-plan,libpkgsource-yaml,libpkgstate,libpkgstate-apply,libpkgstate-build,libpkgstate-plan,libpkgstate-posix,libpkgstate-source,libpkgtransaction',
     'libpkgapply:tests=disabled',
     'libpkgapply:man_pages=disabled',
     'libpkgapply:html_docs=disabled',
@@ -46,6 +46,7 @@ project(
     'libpkgimage:man_pages=disabled',
     'libpkgimage:html_docs=disabled',
     'libpkgimage-exec:tests=disabled',
+    'libpkgobject:tests=disabled',
     'libpkgplan:tests=disabled',
     'libpkgplan:man_pages=disabled',
     'libpkgplan:html_docs=disabled',
@@ -231,7 +232,7 @@ test(
   args: [
     files('tests/controller/wrapped_pkgctl_release_test.py'),
     pkgctl_exe.full_path(),
-    '0.42.2',
+    '0.43.0',
   ],
   suite: 'controller',
 )

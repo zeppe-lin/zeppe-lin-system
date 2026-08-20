@@ -2,6 +2,13 @@
 
 ## 0.1.0 — unreleased
 
+- Advance the terminal controller to `pkgctl` 0.43.0 and add `libpkgobject`
+  0.1.0 to the exact wrapped controller closure. Force the new dependency to
+  its pinned fallback so an ambient installed package-object provider cannot
+  satisfy controller composition. Bootstrap now provisions one durable
+  package-object reservoir per qualification/main stage, outside private
+  runtime cleanup, and supplies that current resource authority on both start
+  and resume without retaining its pathname as transaction semantics.
 - Advance terminal `pkgctl` to 0.42.2 and bind the build-selection cohort.
   Direct BUILD/CHECK subject necessity remains resolver goal authority, while
   flexible dependency selection retains compatible installed authority instead

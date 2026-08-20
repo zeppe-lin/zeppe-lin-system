@@ -50,6 +50,12 @@ For a prefetched controller source set, `--wrap-mode=nodownload` disables wrap
 network acquisition while the committed `force_fallback_for` policy continues
 to forbid installed Zeppe-Lin substitutes.
 
+The pinned closure includes `libpkgobject` alongside `pkgctl` 0.43.0. Bootstrap
+keeps package-object byte availability in `qualification/package-objects` and
+`main/package-objects`, as durable siblings of each stage's private `runtime`
+tree. Those paths are current resource-provider coordinates, not installed-state
+or transaction-history authority, and are supplied again on resume.
+
 ## Bootstrap
 
 The default bootstrap invocation is deliberately short:

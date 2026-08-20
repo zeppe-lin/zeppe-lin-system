@@ -11,7 +11,7 @@ EXPECTED = {
     'libpkgbuild', 'libpkgbuild-exec', 'libpkgbuild-image', 'libpkgbuild-plan',
     'libpkgcatalog', 'libpkgcatalog-acquire', 'libpkgcheck', 'libpkgcheck-exec',
     'libpkgexec', 'libpkgexec-linux', 'libpkgfetch', 'libpkgimage',
-    'libpkgimage-exec', 'libpkgplan', 'libpkgreconcile',
+    'libpkgimage-exec', 'libpkgobject', 'libpkgplan', 'libpkgreconcile',
     'libpkgreconcile-apply', 'libpkgreconcile-apply-posix',
     'libpkgreconcile-posix', 'libpkgresolve', 'libpkgsource',
     'libpkgsource-exec', 'libpkgsource-plan', 'libpkgsource-yaml',
@@ -37,8 +37,10 @@ EXPECTED_CONTROLLER_REVISIONS = {
         '6af8af6547612e096e07acdb27daaeb3ee530711', '3.1.3'),
     'libpkgtransaction': (
         '5e9b78ec702a96ee477c8d342824d9c6b5253022', '4.1.0'),
+    'libpkgobject': (
+        '022917659cb7d042d4a5b8814629d208235f4977', '0.1.0'),
     'pkgctl': (
-        '01828c814879af39d401d229df24ee84a68ccdbc', '0.42.2'),
+        'ef52450096dd5aec88897fc34ea5c70f609e9a52', '0.43.0'),
 }
 
 

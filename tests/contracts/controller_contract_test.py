@@ -38,7 +38,7 @@ def main() -> None:
         'libpkgbuild', 'libpkgbuild-exec', 'libpkgbuild-image', 'libpkgbuild-plan',
         'libpkgcatalog', 'libpkgcatalog-acquire', 'libpkgcatalog-codec',
         'libpkgcheck', 'libpkgcheck-exec', 'libpkgexec', 'libpkgexec-linux',
-        'libpkgfetch', 'libpkgimage', 'libpkgimage-exec', 'libpkgplan',
+        'libpkgfetch', 'libpkgimage', 'libpkgimage-exec', 'libpkgobject', 'libpkgplan',
         'libpkgreconcile', 'libpkgreconcile-apply',
         'libpkgreconcile-apply-posix', 'libpkgreconcile-posix', 'libpkgresolve',
         'libpkgsource', 'libpkgsource-codec', 'libpkgsource-exec',
@@ -87,7 +87,7 @@ def main() -> None:
     require(meson, "'wrapped-pkgctl-start'", 'wrapped controller startup test')
     require(meson, "'tests/controller/wrapped_pkgctl_release_test.py'",
             'wrapped pkgctl release witness')
-    require(meson, "'0.42.2'", 'admitted wrapped pkgctl release')
+    require(meson, "'0.43.0'", 'admitted wrapped pkgctl release')
     require(meson, "'wrapped-isolation'", 'wrapped privileged isolation test')
     require(meson, "suite: 'integration-privileged'", 'privileged wrapper test suite')
 

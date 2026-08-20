@@ -31,6 +31,10 @@ and start fresh rather than adding a closure-compatibility decoder.
 If a new controller dependency is introduced, add its wrap and every provided
 dependency name to `force_fallback_for`. The source-lock contract must fail until
 closure membership and forcing policy agree.
+For resource providers such as `libpkgobject`, keep product-owned physical stores
+outside private runtime cleanup and pass their coordinates as current invocation
+authority. Do not add those pathnames to retained transaction semantics merely
+because resume needs to reacquire the provider.
 
 ## Wrapped project options
 
