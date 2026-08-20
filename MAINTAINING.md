@@ -75,9 +75,14 @@ project defines the signing-key trust authority used for verification.
 
 ## Bootstrap workspace compatibility
 
-Bootstrap workspace JSON is private product evidence. During pre-release
-architecture work, incompatible old private bytes should fail closed rather than
-acquiring compatibility decoders or reconstructing missing authority.
+Bootstrap workspace JSON is private product evidence. A fresh workspace root must
+be absent before initialization; do not weaken that to accept an empty unmarked
+directory. Exclusive root creation is what lets pre-marker failure cleanup remove
+only bytes the invocation owns, while `bootstrap clean` can continue refusing
+arbitrary unmarked paths.
+
+During pre-release architecture work, incompatible old private bytes should fail
+closed rather than acquiring compatibility decoders or reconstructing missing authority.
 This fail-closed rule governs semantic admission (`run`, `resume`, and `check`),
 not destruction. `bootstrap clean` may remove a marker-bound workspace without
 decoding stale product semantics; the marker format and exact workspace binding

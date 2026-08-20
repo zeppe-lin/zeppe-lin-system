@@ -991,17 +991,23 @@ def _reject_start_redeclaration(options: BootstrapOptions) -> None:
         raise BootstrapError('--source-date-epoch is valid only when initializing a new workspace')
 
 
-def _initialize_attempt(context: BuildContext, options: BootstrapOptions) -> dict[str, object]:
+def _initialize_attempt(
+    context: BuildContext,
+    options: BootstrapOptions,
+    *,
+    workspace_claimed: bool,
+) -> dict[str, object]:
     workspace = options.workspace.expanduser().resolve()
     _validate_controller_release(context)
-    if marker_path(workspace).exists():
-        marker = load_marker(workspace)
-        _validate_controller(context, marker)
-        _reject_start_redeclaration(options)
-        return marker
-    if workspace.exists() and any(workspace.iterdir()):
-        raise BootstrapError(f'bootstrap workspace is nonempty and unmarked: {workspace}')
-    workspace.mkdir(parents=True, exist_ok=True)
+    if not workspace_claimed:
+        if marker_path(workspace).exists():
+            marker = load_marker(workspace)
+            _validate_controller(context, marker)
+            _reject_start_redeclaration(options)
+            return marker
+        if workspace.exists():
+            raise BootstrapError(f'bootstrap workspace already exists and is unmarked: {workspace}')
+        raise BootstrapError('new bootstrap workspace root was not claimed')
 
     if options.jobs is not None and options.jobs <= 0:
         raise BootstrapError('--jobs must be positive')
@@ -1159,11 +1165,20 @@ def _initialize_attempt(context: BuildContext, options: BootstrapOptions) -> dic
 
 def initialize(context: BuildContext, options: BootstrapOptions) -> dict[str, object]:
     workspace = options.workspace.expanduser().resolve()
-    created = not workspace.exists()
+    if marker_path(workspace).exists():
+        return _initialize_attempt(context, options, workspace_claimed=False)
+    if workspace.exists():
+        raise BootstrapError(f'bootstrap workspace already exists and is unmarked: {workspace}')
     try:
-        return _initialize_attempt(context, options)
+        workspace.mkdir(parents=True, exist_ok=False)
+    except FileExistsError as error:
+        raise BootstrapError(
+            f'bootstrap workspace appeared before ownership could be claimed: {workspace}') from error
+
+    try:
+        return _initialize_attempt(context, options, workspace_claimed=True)
     except BaseException as error:
-        if created and workspace.exists() and not marker_path(workspace).exists():
+        if workspace.exists() and not marker_path(workspace).exists():
             privilege = None
             if options.privilege is not None:
                 try:

@@ -224,8 +224,14 @@ seed-retirement evidence.
 
 ## Workspace authority and restart
 
-A bootstrap workspace is private durable product authority. At initialization
-it retains:
+A bootstrap workspace is private durable product authority. Fresh initialization
+requires the workspace path itself to be absent. The product creates that root
+exclusively before any seed/snapshot/state bytes enter it, so any failure before
+marker publication occurs only beneath a root the current invocation created and
+may clean. Existing empty or nonempty unmarked roots are refused without mutation;
+their pathname alone is not deletion authority.
+
+At initialization it retains:
 
 ```text
 exact bootstrap product-model authority

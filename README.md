@@ -104,10 +104,12 @@ named `@construction` profile or membership set. A later hostile seed-retirement
 gate, not successful S0-assisted compiler construction, owns the transition to
 seed-free construction.
 
-The product workspace defaults to `build/products/bootstrap`. Start-only
-authority is retained there. Later operations do not require the operator to
-repeat the seed hash, foundation revision, build policy, root coordinate, or
-controller paths:
+The product workspace defaults to `build/products/bootstrap`. A fresh bootstrap
+requires that workspace path to be absent so the product exclusively owns every
+byte created before the durable workspace marker is published; an existing empty
+or nonempty unmarked directory is refused without mutation. Start-only authority
+is retained there. Later operations do not require the operator to repeat the seed
+hash, foundation revision, build policy, root coordinate, or controller paths:
 
 ```sh
 ./build/zlsystem bootstrap resume

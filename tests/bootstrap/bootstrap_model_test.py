@@ -514,6 +514,46 @@ artifact.0.sha256 abc
         if failed_workspace.exists():
             fail('failed new bootstrap initialization retained an unmarked workspace')
 
+        empty_workspace = temp / 'preexisting-empty-bootstrap'
+        empty_workspace.mkdir()
+        try:
+            bootstrap.initialize(
+                context,
+                bootstrap.BootstrapOptions(
+                    workspace=empty_workspace, seed_name='missing-bootstrap-model-seed'))
+        except bootstrap.BootstrapError as error:
+            if 'already exists and is unmarked' not in str(error):
+                fail(f'pre-existing empty workspace refusal is opaque: {error}')
+        else:
+            fail('pre-existing empty unmarked workspace was admitted for initialization')
+        if not empty_workspace.is_dir() or any(empty_workspace.iterdir()):
+            fail('bootstrap initialization mutated a pre-existing empty unmarked workspace')
+
+        raced_workspace = temp / 'raced-bootstrap'
+        original_mkdir = Path.mkdir
+
+        def racing_mkdir(path, *args, **kwargs):
+            if path == raced_workspace:
+                original_mkdir(path, *args, **kwargs)
+                (path / 'foreign').write_text('keep\n', encoding='utf-8')
+                raise FileExistsError('simulated concurrent workspace claimant')
+            return original_mkdir(path, *args, **kwargs)
+
+        Path.mkdir = racing_mkdir
+        try:
+            try:
+                bootstrap.initialize(
+                    context, bootstrap.BootstrapOptions(workspace=raced_workspace))
+            except bootstrap.BootstrapError as error:
+                if 'appeared before ownership could be claimed' not in str(error):
+                    fail(f'concurrent workspace claim refusal is opaque: {error}')
+            else:
+                fail('concurrently created workspace was adopted by bootstrap initialization')
+        finally:
+            Path.mkdir = original_mkdir
+        if (raced_workspace / 'foreign').read_text(encoding='utf-8') != 'keep\n':
+            fail('bootstrap initialization deleted a concurrently claimed foreign workspace')
+
         foundation_root = temp / 'foundation-root'
         (foundation_root / 'usr/lib').mkdir(parents=True)
         (foundation_root / 'usr/bin').mkdir(parents=True)

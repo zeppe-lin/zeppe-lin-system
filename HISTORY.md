@@ -2,6 +2,11 @@
 
 ## 0.1.0 — unreleased
 
+- Require a fresh bootstrap to own an absent workspace root before creating any
+  private bytes. Existing empty or nonempty unmarked directories are refused
+  without mutation, closing the pre-marker failure trap where an externally
+  precreated empty root could retain partial initialization bytes that
+  `bootstrap clean` correctly refused to guess were product-owned.
 - Advance `pkgsrc-foundation` to the admitted Stage-B GCC handoff boundary and
   make the real S0-assisted main transaction construct/check that compiler
   sensor alongside exact `@foundation` convergence. The product now requires

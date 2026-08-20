@@ -61,6 +61,13 @@ def main() -> None:
     if "'product_model': BOOTSTRAP_PRODUCT_MODEL" not in product_sources or \
             "marker.get('product_model') != BOOTSTRAP_PRODUCT_MODEL" not in product_sources:
         fail('workspace admission does not retain/fail-close on the exact product model')
+    if "if workspace.exists():\n        raise BootstrapError(f'bootstrap workspace already exists and is unmarked: {workspace}')" \
+            not in product_sources:
+        fail('new bootstrap does not require exclusive ownership of an absent workspace root')
+    if "workspace.mkdir(parents=True, exist_ok=False)" not in product_sources or \
+            "except FileExistsError as error:" not in product_sources or \
+            "appeared before ownership could be claimed" not in product_sources:
+        fail('bootstrap workspace creation does not fail closed on a concurrent existing root')
     if "marker['product_model']" not in product_sources:
         fail('bootstrap product model does not bind request identity')
     if "product-model {marker[\"product_model\"]}" not in product_sources:

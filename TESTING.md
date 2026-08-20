@@ -94,9 +94,11 @@ main-stage artifact authority, rejects an explicit build goal that would recreat
 the target substrate in a parallel build environment, and poisons a synthetic
 foundation root with compiler residue. It also rejects bootstrap product-model,
 pinned foundation-source, and product-qualification drift before resume can
-reinterpret retained transaction authority. It also proves cleanup refuses unmarked or
-misbound workspaces while allowing a marker-bound pre-policy workspace to be
-destroyed without semantic admission. Seed retirement remains explicitly unproven.
+reinterpret retained transaction authority. It also requires fresh initialization
+to refuse a pre-existing empty unmarked workspace without creating any bytes, and
+proves cleanup refuses unmarked or misbound workspaces while allowing a
+marker-bound pre-policy workspace to be destroyed without semantic admission.
+Seed retirement remains explicitly unproven.
 
 The real product qualification is intentionally separate from this suite:
 
